@@ -1,0 +1,5 @@
+backend/node_modules
+backend/package-lock.json
+fortend/node_modules
+fortend/package-lock.json
+.gitingoore
