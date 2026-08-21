@@ -1,3 +1,8 @@
+
+
+
+
+
 import React, { useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -6,10 +11,6 @@ import {
   ReportIcon,
   DashboardIcon,
   PaymentIcon,
-  InventoryIcon,
-  EmployeeIcon,
-  CustomerIcon,
-  LogoutIcon,
   ChevronDownIcon,
   ChevronUpIcon,
 } from "../common/Icons";
@@ -52,12 +53,6 @@ const MarksIcon = () => (
   </svg>
 );
 
-const FeesIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
-
 const TimetableIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -67,18 +62,6 @@ const TimetableIcon = () => (
 const HomeworkIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-  </svg>
-);
-
-const LibraryIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-  </svg>
-);
-
-const TransportIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m16-8V9a4 4 0 00-4-4h-6a4 4 0 00-4 4v4m8 0v4a4 4 0 01-4 4H6a4 4 0 01-4-4v-4m8-8V3a2 2 0 00-2-2H6a2 2 0 00-2 2v4m12 0h2a2 2 0 012 2v4" />
   </svg>
 );
 
@@ -101,9 +84,54 @@ const NoticeIcon = () => (
   </svg>
 );
 
-const HolidayIcon = () => (
+// Daily Learning Challenge Icons
+const MemoryGamesIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+  </svg>
+);
+
+const HandwritingCheckerIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+  </svg>
+);
+
+const QuizGeneratorIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const StoryGeneratorIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+);
+
+const DrawingStudioIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 21h12" />
+  </svg>
+);
+
+const ProblemSolverIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+  </svg>
+);
+
+const ScienceExplorerIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+  </svg>
+);
+
+const LearningIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
   </svg>
 );
 
@@ -191,14 +219,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             isOpen={isOpen}
           />
 
-          {/* Academic Section */}
-          <div className="px-2 mt-2">
-            {isOpen && (
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">
-                Academic
-              </p>
-            )}
-          </div>
+     
 
           {/* Students */}
           <SidebarItem
@@ -210,9 +231,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
 
           {/* Teachers */}
           <SidebarItem
-            to="/teachers"
+            to="/staff"
             icon={<TeachersIcon />}
-            label="Teachers"
+            label="Staff"
             isOpen={isOpen}
           />
 
@@ -235,10 +256,96 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             isActive={isParentActive(['/attendance'])}
             subItems={[
               { to: "/attendance/mark", label: "Mark Attendance" },
-              // { to: "/attendance/report", label: "Attendance Report" },
               { to: "/attendance/summary", label: "Monthly Summary" },
             ]}
           />
+
+
+        
+
+        
+        
+          {/* Expenses */}
+          <SidebarItem
+            to="/expenses"
+            icon={<PaymentIcon />}
+            label="Expenses"
+            isOpen={isOpen}
+          />
+
+          {/* Communication Section */}
+          {/* <div className="px-2 mt-4">
+            {isOpen && (
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">
+                Communication
+              </p>
+            )}
+          </div> */}
+
+          {/* Notices */}
+
+
+          {/* <SidebarItem
+            to="/notices"
+            icon={<NoticeIcon />}
+            label="Notices & Announcements"
+            isOpen={isOpen}
+          /> */}
+
+        
+
+          {/* Reports */}
+          <SidebarItem
+            to="/reports"
+            icon={<ReportIcon />}
+            label="Reports"
+            isOpen={isOpen}
+          />
+
+         
+          {/* Users Management */}
+          <SidebarItem
+            to="/users"
+            icon={<UserRoleIcon />}
+            label="Users Management"
+            isOpen={isOpen}
+          />
+
+
+
+
+
+
+
+          {/* Daily Learning Challenge Dropdown */}
+          <SidebarDropdown
+            to="/learning"
+            icon={<LearningIcon />}
+            label="Learning Challenge"
+            isOpen={isOpen}
+            isDropdownOpen={openDropdowns['learning']}
+            onToggle={() => toggleDropdown('learning')}
+            isActive={isParentActive(['/learning'])}
+            subItems={[
+             
+               { to: "/ai-learn/courses", label: "AI Knowledge Explorer" },
+               { to: "/learning/test121", label: "AI Story Explorer" },
+
+
+                   
+
+              { to: "/learning/memory-games", label: "Memory Recall" },
+
+              { to: "/learning/storybuilder", label: "Memory Games" },
+        
+              { to: "/learning/quiz-generator", label: "AI Quiz Generator" },
+              { to: "/learning/story-generator", label: "AI Story Generator" },
+              { to: "/learning/drawing-studio", label: "AI Drawing Studio" },
+              { to: "/learning/problem-solver", label: "AI Problem Solver" },
+              { to: "/learning/handwriting-checker", label: "AI Handwriting Checker" },
+            ]}
+          />
+
 
           {/* Exams Dropdown */}
           <SidebarDropdown
@@ -250,137 +357,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             onToggle={() => toggleDropdown('exams')}
             isActive={isParentActive(['/exams'])}
             subItems={[
-              { to: "/exams/schedule", label: "Exam Schedule" },
+             
               { to: "/exams/admit-card", label: "Admit Card" },
-              { to: "/exams/routine", label: "Exam Routine" },
+            
             ]}
-          />
-
-          {/* Marks & Grades */}
-          <SidebarItem
-            to="/marks"
-            icon={<MarksIcon />}
-            label="Marks & Grades"
-            isOpen={isOpen}
-          />
-
-          {/* Timetable */}
-          <SidebarItem
-            to="/timetable"
-            icon={<TimetableIcon />}
-            label="Timetable"
-            isOpen={isOpen}
-          />
-
-          {/* Homework */}
-          <SidebarItem
-            to="/homework"
-            icon={<HomeworkIcon />}
-            label="Homework"
-            isOpen={isOpen}
-          />
-
-          {/* Financial Section */}
-          <div className="px-2 mt-4">
-            {isOpen && (
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">
-                Financial
-              </p>
-            )}
-          </div>
-
-          {/* Fee Management */}
-          {/* <SidebarDropdown
-            to="/fees"
-            icon={<FeesIcon />}
-            label="Fee Management"
-            isOpen={isOpen}
-            isDropdownOpen={openDropdowns['fees']}
-            onToggle={() => toggleDropdown('fees')}
-            isActive={isParentActive(['/fees'])}
-            subItems={[
-              { to: "/fees/structure", label: "Fee Structure" },
-              { to: "/fees/collection", label: "Fee Collection" },
-              { to: "/fees/dues", label: "Fee Dues" },
-              { to: "/fees/reports", label: "Fee Reports" },
-            ]}
-          /> */}
-
-          {/* Expenses */}
-          <SidebarItem
-            to="/expenses"
-            icon={<PaymentIcon />}
-            label="Expenses"
-            isOpen={isOpen}
-          />
-
-       
-
-          {/* Communication Section */}
-          <div className="px-2 mt-4">
-            {isOpen && (
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">
-                Communication
-              </p>
-            )}
-          </div>
-
-          {/* Notices */}
-          <SidebarItem
-            to="/notices"
-            icon={<NoticeIcon />}
-            label="Notices & Announcements"
-            isOpen={isOpen}
-          />
-
-          {/* Holidays */}
-          {/* <SidebarItem
-            to="/holidays"
-            icon={<HolidayIcon />}
-            label="Holidays"
-            isOpen={isOpen}
-          /> */}
-
-          {/* Reports Section */}
-          <div className="px-2 mt-4">
-            {isOpen && (
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">
-                Reports
-              </p>
-            )}
-          </div>
-
-          {/* Reports */}
-          <SidebarItem
-            to="/reports"
-            icon={<ReportIcon />}
-            label="Reports"
-            isOpen={isOpen}
-          />
-
-          {/* Settings Section */}
-          <div className="px-2 mt-4">
-            {isOpen && (
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">
-                Administration
-              </p>
-            )}
-          </div>
-
-          {/* Users Management */}
-          <SidebarItem
-            to="/users"
-            icon={<UserRoleIcon />}
-            label="Users Management"
-            isOpen={isOpen}
-          />
-
-          {/* Settings */}
-          <SidebarItem
-            to="/settings"
-            icon={<SettingsIcon />}
-            label="AI Assist"
-            isOpen={isOpen}
           />
 
           {/* Support */}
@@ -464,7 +444,7 @@ interface DropdownProps {
 }
 
 const SidebarDropdown: React.FC<DropdownProps> = ({
-  to,
+  // to,
   icon,
   label,
   isOpen,
@@ -473,7 +453,7 @@ const SidebarDropdown: React.FC<DropdownProps> = ({
   isActive,
   subItems,
 }) => {
-  const location = useLocation();
+ 
 
   return (
     <div>

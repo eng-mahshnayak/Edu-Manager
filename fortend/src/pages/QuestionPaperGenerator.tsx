@@ -18,10 +18,7 @@ import {
   Paper,
   Divider,
   Radio,
-  RadioGroup,
-  FormControlLabel,
-  Checkbox,
-  IconButton,
+
   Dialog,
   DialogTitle,
   DialogContent,
@@ -34,12 +31,12 @@ import {
   Edit,
   Save,
   Print,
-  Share,
+
   ContentCopy,
   Quiz,
-  Description,
+
   School,
-  Book,
+
   CheckCircle,
 } from '@mui/icons-material';
 
@@ -116,7 +113,7 @@ const QuestionPaperGenerator: React.FC = () => {
   const [questionPaper, setQuestionPaper] = useState<QuestionPaper | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
-  const [showAnswers, setShowAnswers] = useState(false);
+
   const [showAnswerKey, setShowAnswerKey] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [paperTitle, setPaperTitle] = useState('');
@@ -717,3 +714,4 @@ const QuestionPaperGenerator: React.FC = () => {
 };
 
 export default QuestionPaperGenerator;
+

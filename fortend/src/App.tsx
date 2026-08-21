@@ -28,9 +28,9 @@ import { Toaster } from "react-hot-toast";
 import NotFound from "./pages/NotFound";
 
 import Reports from "./pages/Reports";
-import TeachersManagement from "./pages/TeachersManagement";
+import TeachersManagement from "./pages/StaffManagement";
 import StudentsAdmission from "./pages/StudentsAdmission";
-import DrawingAI from "./pages/DrawingAI";
+// import DrawingAI from "./pages/DrawingAI";
 import ClassSectionManagement from "./pages/ClassSectionManagement";
 import StaffAttendanceManagement from "./pages/StaffAttendanceManagement";
 import MonthlyAttendanceReport from "./pages/MonthlyAttendanceReport";
@@ -40,9 +40,20 @@ import HomeworkManagement from "./pages/HomeworkManagement";
 import UserManagement from "./pages/UserManagement";
 import SchoolDashboard from "./pages/Dashboard";
 import QuestionPaperGenerator from "./pages/QuestionPaperGenerator";
-import LeaveCalendar from "./pages/LeaveCalendar";
+// import LeaveCalendar from "./pages/LeaveCalendar";
 import StudentAdmissionCard from "./pages/StudentAdmissionCard";
 import TransferCertificate from "./pages/TransferCertificate";
+import AIStoryGenerator from "./pages/SimpleAIQuestionPaper";
+import DescriptionInputPage from "./pages/DescriptionInputPage";
+import MemoryGame from "./pages/MemoryGame";
+import QuizGenerator from "./pages/QuizGenerator";
+import ExploreDropdown from "./pages/ExploreDropdown";
+import DrawingApp from "./pages/DrawingApp";
+import ProblemSolver from "./pages/ProblemSolver";
+import StudentTreeView from "./pages/StudentTreeView";
+import LeaveCalendar from "./pages/LeaveCalendar";
+import StoryBuilder from "./pages/GameLibrary";
+
 
 
 
@@ -71,9 +82,31 @@ function App() {
 
       <Route path="/reports" element={<Reports />} />
 
-      
-        <Route path="/teachers" element={<TeachersManagement />} />
+
+
+
+{/*  working routes  */}
+
+
+        <Route path="/staff" element={<TeachersManagement />} />
          <Route path="/students" element={<StudentsAdmission />} />
+
+ <Route path="/studentsfeeview" element={<StudentTreeView />} />
+
+  <Route path="/studentleave" element={<LeaveCalendar />} />
+
+    <Route path="/learning/storybuilder" element={<StoryBuilder />} />
+         
+
+
+         
+      
+{/*  working routes end   */}
+
+
+
+
+      
            {/* <Route path="/classes" element={<DrawingAI />} /> */}
 
             <Route path="/classes" element={<ClassSectionManagement />} />
@@ -89,9 +122,40 @@ function App() {
 
              <Route path="/users" element={<UserManagement />} />
 
-               <Route path="/settings" element={<QuestionPaperGenerator />} />
+               <Route path="/learning/quiz-generator" element={<QuestionPaperGenerator />} />
 
-                 <Route path="/leavecalendar" element={<LeaveCalendar />} />
+               
+
+                 <Route path="/learning/story-generator" element={<AIStoryGenerator />} />
+
+                  <Route path="/learning/test121" element={<DescriptionInputPage />} />
+
+                  <Route path="/learning/memory-games" element={<MemoryGame />} />
+
+
+                    <Route path="/learning/drawing-studio" element={<DrawingApp />} />
+
+                     <Route path="/learning/problem-solver" element={<ProblemSolver />} />
+
+
+
+                   
+
+                   
+
+                
+
+                    <Route path="/learning/quiz-generator" element={<QuizGenerator />} />
+
+
+
+ <Route path="/ai-learn/courses" element={<ExploreDropdown />} />
+               
+
+
+
+
+                 {/* <Route path="/leavecalendar" element={<LeaveCalendar />} /> */}
 
                    <Route path="/exams/admit-card" element={<StudentAdmissionCard />} />
                     <Route path="/transfercertificate" element={<TransferCertificate />} />

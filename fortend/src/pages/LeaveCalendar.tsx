@@ -1,681 +1,312 @@
-// LeaveCalendar.tsx
+import React from 'react';
 
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Card,
-  Typography,
-  Grid,
-  Chip,
-  IconButton,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Badge,
-  Tooltip,
-  Paper,
-  Avatar,
-} from '@mui/material';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Today,
-  Work,
-  LocalHospital,
-  BeachAccess,
-  FamilyRestroom,
-  School,
-  EventBusy,
-  CheckCircle,
-  Cancel,
-  Pending,
-  Add,
-} from '@mui/icons-material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import toast from 'react-hot-toast';
+// ----- Types -----
+type LeaveType = 'personal' | 'sick' | 'casual' | 'holiday' | 'other';
 
-interface Leave {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  employeeRole: string;
-  leaveType: 'sick' | 'casual' | 'earned' | 'emergency' | 'maternity' | 'paternity' | 'unpaid';
-  startDate: string;
-  endDate: string;
-  reason: string;
-  status: 'pending' | 'approved' | 'rejected';
-  appliedOn: string;
-  approvedBy?: string;
-  approvedOn?: string;
-  documentUrl?: string;
-  totalDays: number;
+interface LeaveRecord {
+  date: string; // 'YYYY-MM-DD'
+  type: LeaveType;
+  reason?: string;
 }
 
-interface Employee {
-  id: string;
-  name: string;
-  role: string;
-  department: string;
-  profileImage?: string;
-}
+// ----- Generate Dummy Data for Full Year -----
+const generateYearLeaves = (year: number): LeaveRecord[] => {
+  const leaves: LeaveRecord[] = [];
 
-const LeaveCalendar: React.FC = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth());
-  const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
-  const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
-  const [selectedLeaveType, setSelectedLeaveType] = useState<string>('all');
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedLeave, setSelectedLeave] = useState<Leave | null>(null);
-  const [leaves, setLeaves] = useState<Leave[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  // Helper: random date in a given month
+  const dateStr = (month: number, day: number) =>
+    `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-  // Leave type configurations with colors
-  const leaveTypeConfig = {
-    sick: {
-      label: 'Sick Leave',
-      color: '#ef4444',
-      bgColor: '#fef2f2',
-      darkBgColor: '#7f1d1d',
-      icon: <LocalHospital sx={{ fontSize: 16 }} />,
-    },
-    casual: {
-      label: 'Casual Leave',
-      color: '#10b981',
-      bgColor: '#ecfdf5',
-      darkBgColor: '#064e3b',
-      icon: <BeachAccess sx={{ fontSize: 16 }} />,
-    },
-    earned: {
-      label: 'Earned Leave',
-      color: '#3b82f6',
-      bgColor: '#eff6ff',
-      darkBgColor: '#1e3a8a',
-      icon: <Work sx={{ fontSize: 16 }} />,
-    },
-    emergency: {
-      label: 'Emergency Leave',
-      color: '#f59e0b',
-      bgColor: '#fffbeb',
-      darkBgColor: '#78350f',
-      icon: <EventBusy sx={{ fontSize: 16 }} />,
-    },
-    maternity: {
-      label: 'Maternity Leave',
-      color: '#ec4899',
-      bgColor: '#fdf2f8',
-      darkBgColor: '#831843',
-      icon: <FamilyRestroom sx={{ fontSize: 16 }} />,
-    },
-    paternity: {
-      label: 'Paternity Leave',
-      color: '#8b5cf6',
-      bgColor: '#f5f3ff',
-      darkBgColor: '#4c1d95',
-      icon: <FamilyRestroom sx={{ fontSize: 16 }} />,
-    },
-    unpaid: {
-      label: 'Unpaid Leave',
-      color: '#6b7280',
-      bgColor: '#f9fafb',
-      darkBgColor: '#374151',
-      icon: <Cancel sx={{ fontSize: 16 }} />,
-    },
-  };
-
-  // Sample employees data
-  const initialEmployees: Employee[] = [
-    { id: 'EMP001', name: 'Dr. Rajesh Kumar', role: 'Principal', department: 'Administration' },
-    { id: 'EMP002', name: 'Prof. Meera Sharma', role: 'Teacher', department: 'Science' },
-    { id: 'EMP003', name: 'Mr. Suresh Verma', role: 'Teacher', department: 'English' },
-    { id: 'EMP004', name: 'Mrs. Priya Singh', role: 'Teacher', department: 'Commerce' },
-    { id: 'EMP005', name: 'Mr. Amit Patel', role: 'Teacher', department: 'Computer Science' },
-    { id: 'EMP006', name: 'Ramesh Singh', role: 'Driver', department: 'Transport' },
-    { id: 'EMP007', name: 'Lakshmi Bai', role: 'Maid', department: 'Housekeeping' },
-    { id: 'EMP008', name: 'Mohan Kumar', role: 'Labour', department: 'Maintenance' },
+  // ---- Personal Leaves (12 random days across year) ----
+  const personalDays = [
+    { month: 0, day: 5 }, { month: 1, day: 12 }, { month: 2, day: 18 },
+    { month: 3, day: 22 }, { month: 4, day: 8 }, { month: 5, day: 15 },
+    { month: 6, day: 20 }, { month: 7, day: 25 }, { month: 8, day: 10 },
+    { month: 9, day: 28 }, { month: 10, day: 14 }, { month: 11, day: 30 },
   ];
-
-  // Sample leaves data for 12 months
-  const generateSampleLeaves = (): Leave[] => {
-    const sampleLeaves: Leave[] = [];
-    const employees = initialEmployees;
-    
-    // Generate leaves for each month
-    for (let month = 0; month < 12; month++) {
-      const year = 2024;
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      
-      employees.forEach((emp, empIndex) => {
-        // Random number of leaves per employee per month (0-3)
-        const numLeaves = Math.floor(Math.random() * 4);
-        
-        for (let i = 0; i < numLeaves; i++) {
-          const leaveTypes: Leave['leaveType'][] = ['sick', 'casual', 'earned', 'emergency', 'maternity', 'paternity', 'unpaid'];
-          const leaveType = leaveTypes[Math.floor(Math.random() * leaveTypes.length)];
-          
-          // Random date in month
-          const day = Math.floor(Math.random() * daysInMonth) + 1;
-          const startDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const endDate = startDate;
-          
-          sampleLeaves.push({
-            id: `LEV${String(sampleLeaves.length + 1).padStart(3, '0')}`,
-            employeeId: emp.id,
-            employeeName: emp.name,
-            employeeRole: emp.role,
-            leaveType,
-            startDate,
-            endDate,
-            reason: `${leaveType} leave reason`,
-            status: ['pending', 'approved', 'approved', 'approved'][Math.floor(Math.random() * 4)] as any,
-            appliedOn: startDate,
-            totalDays: 1,
-          });
-        }
-      });
-    }
-    
-    return sampleLeaves;
-  };
-
-  useEffect(() => {
-    setEmployees(initialEmployees);
-    setLeaves(generateSampleLeaves());
-  }, []);
-
-  // Get days in month
-  const getDaysInMonth = (year: number, month: number) => {
-    return new Date(year, month + 1, 0).getDate();
-  };
-
-  // Get first day of month (0 = Sunday, 1 = Monday, etc.)
-  const getFirstDayOfMonth = (year: number, month: number) => {
-    return new Date(year, month, 1).getDay();
-  };
-
-  // Get leaves for a specific date
-  const getLeavesForDate = (year: number, month: number, day: number) => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    let filteredLeaves = leaves.filter(l => l.startDate <= dateStr && l.endDate >= dateStr);
-    
-    if (selectedEmployee !== 'all') {
-      filteredLeaves = filteredLeaves.filter(l => l.employeeId === selectedEmployee);
-    }
-    
-    if (selectedLeaveType !== 'all') {
-      filteredLeaves = filteredLeaves.filter(l => l.leaveType === selectedLeaveType);
-    }
-    
-    return filteredLeaves;
-  };
-
-  // Get total leaves count for a date
-  const getLeavesCountForDate = (year: number, month: number, day: number) => {
-    return getLeavesForDate(year, month, day).length;
-  };
-
-  // Get leave type distribution for a date
-  const getLeaveTypeDistribution = (year: number, month: number, day: number) => {
-    const leavesForDate = getLeavesForDate(year, month, day);
-    const distribution: Record<string, number> = {};
-    leavesForDate.forEach(leave => {
-      distribution[leave.leaveType] = (distribution[leave.leaveType] || 0) + 1;
+  personalDays.forEach((d) => {
+    leaves.push({
+      date: dateStr(d.month, d.day),
+      type: 'personal',
+      reason: 'Personal work',
     });
-    return distribution;
-  };
-
-  // Navigate to previous month
-  const prevMonth = () => {
-    if (selectedMonth === 0) {
-      setSelectedMonth(11);
-      setSelectedYear(selectedYear - 1);
-    } else {
-      setSelectedMonth(selectedMonth - 1);
-    }
-  };
-
-  // Navigate to next month
-  const nextMonth = () => {
-    if (selectedMonth === 11) {
-      setSelectedMonth(0);
-      setSelectedYear(selectedYear + 1);
-    } else {
-      setSelectedMonth(selectedMonth + 1);
-    }
-  };
-
-  // Go to current month
-  const goToCurrentMonth = () => {
-    setSelectedMonth(currentDate.getMonth());
-    setSelectedYear(currentDate.getFullYear());
-  };
-
-  // Get status badge
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <Chip icon={<CheckCircle sx={{ fontSize: 14 }} />} label="Approved" size="small" sx={{ bgcolor: '#10b98120', color: '#10b981' }} />;
-      case 'rejected':
-        return <Chip icon={<Cancel sx={{ fontSize: 14 }} />} label="Rejected" size="small" sx={{ bgcolor: '#ef444420', color: '#ef4444' }} />;
-      default:
-        return <Chip icon={<Pending sx={{ fontSize: 14 }} />} label="Pending" size="small" sx={{ bgcolor: '#f59e0b20', color: '#f59e0b' }} />;
-    }
-  };
-
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  
-  const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
-  const firstDay = getFirstDayOfMonth(selectedYear, selectedMonth);
-  
-  const calendarDays = [];
-  for (let i = 0; i < firstDay; i++) {
-    calendarDays.push(null);
-  }
-  for (let i = 1; i <= daysInMonth; i++) {
-    calendarDays.push(i);
-  }
-
-  // Calculate statistics
-  const totalLeaves = leaves.filter(l => {
-    const leaveDate = new Date(l.startDate);
-    return leaveDate.getFullYear() === selectedYear && leaveDate.getMonth() === selectedMonth;
-  }).length;
-  
-  const approvedLeaves = leaves.filter(l => {
-    const leaveDate = new Date(l.startDate);
-    return leaveDate.getFullYear() === selectedYear && leaveDate.getMonth() === selectedMonth && l.status === 'approved';
-  }).length;
-  
-  const pendingLeaves = leaves.filter(l => {
-    const leaveDate = new Date(l.startDate);
-    return leaveDate.getFullYear() === selectedYear && leaveDate.getMonth() === selectedMonth && l.status === 'pending';
-  }).length;
-
-  // Leave type statistics
-  const leaveTypeStats: Record<string, number> = {};
-  Object.keys(leaveTypeConfig).forEach(type => {
-    leaveTypeStats[type] = leaves.filter(l => {
-      const leaveDate = new Date(l.startDate);
-      return leaveDate.getFullYear() === selectedYear && leaveDate.getMonth() === selectedMonth && l.leaveType === type;
-    }).length;
   });
 
-  return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        px: { xs: 2, sm: 3, md: 4 },
-        py: { xs: 2, md: 3 },
-        background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)",
-      }}
-    >
-      <Box sx={{ maxWidth: 1400, mx: "auto" }}>
-        {/* Header */}
-        <Box mb={4}>
-          <Typography variant="h4" fontWeight="bold" sx={{ color: "white", mb: 1, display: "flex", alignItems: "center", gap: 2 }}>
-            <EventBusy sx={{ fontSize: 40 }} />
-            Leave Management Calendar
-          </Typography>
-          <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.7)" }}>
-            Track and manage employee leaves with color-coded calendar view
-          </Typography>
-        </Box>
+  // ---- Sick Leaves (8 random days) ----
+  const sickDays = [
+    { month: 0, day: 15 }, { month: 2, day: 10 }, { month: 3, day: 5 },
+    { month: 5, day: 22 }, { month: 7, day: 3 }, { month: 8, day: 19 },
+    { month: 10, day: 7 }, { month: 11, day: 12 },
+  ];
+  sickDays.forEach((d) => {
+    leaves.push({
+      date: dateStr(d.month, d.day),
+      type: 'sick',
+      reason: 'Fever / Medical',
+    });
+  });
 
-        {/* Filters */}
-        <Grid container spacing={2} mb={3}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <FormControl fullWidth sx={{ bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
-              <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Employee</InputLabel>
-              <Select
-                value={selectedEmployee}
-                onChange={(e) => setSelectedEmployee(e.target.value)}
-                label="Employee"
-                sx={{ color: 'white', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' } }}
+  // ---- Casual Leaves (6 random days) ----
+  const casualDays = [
+    { month: 1, day: 25 }, { month: 4, day: 30 }, { month: 6, day: 12 },
+    { month: 8, day: 28 }, { month: 9, day: 15 }, { month: 11, day: 5 },
+  ];
+  casualDays.forEach((d) => {
+    leaves.push({
+      date: dateStr(d.month, d.day),
+      type: 'casual',
+      reason: 'Casual leave',
+    });
+  });
+
+  // ---- Holidays (fixed national/regional holidays) ----
+  const holidays = [
+    { month: 0, day: 1, name: "New Year" },
+    { month: 0, day: 26, name: "Republic Day" },
+    { month: 1, day: 14, name: "Valentine's Day" },
+    { month: 2, day: 8, name: "Holi" },
+    { month: 2, day: 25, name: "Good Friday" },
+    { month: 3, day: 14, name: "Baisakhi" },
+    { month: 4, day: 1, name: "Labour Day" },
+    { month: 4, day: 9, name: "Buddha Purnima" },
+    { month: 6, day: 15, name: "Eid-ul-Adha" },
+    { month: 7, day: 15, name: "Independence Day" },
+    { month: 8, day: 30, name: "Janmashtami" },
+    { month: 9, day: 2, name: "Gandhi Jayanti" },
+    { month: 9, day: 15, name: "Dussehra" },
+    { month: 10, day: 1, name: "Diwali" },
+    { month: 11, day: 25, name: "Christmas" },
+  ];
+  holidays.forEach((h) => {
+    leaves.push({
+      date: dateStr(h.month, h.day),
+      type: 'holiday',
+      reason: h.name,
+    });
+  });
+
+  // ---- Other leaves (some random) ----
+  const otherDays = [
+    { month: 0, day: 10 }, { month: 6, day: 8 }, { month: 10, day: 20 },
+  ];
+  otherDays.forEach((d) => {
+    leaves.push({
+      date: dateStr(d.month, d.day),
+      type: 'other',
+      reason: 'Emergency',
+    });
+  });
+
+  return leaves;
+};
+
+// ----- Month Data -----
+const monthNames = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const shortMonthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// ----- Main Component -----
+const FullYearLeaveCalendar: React.FC = () => {
+  const currentYear = new Date().getFullYear();
+  const [leaves] = React.useState<LeaveRecord[]>(generateYearLeaves(currentYear));
+
+  // Color & Label mapping
+  const typeColors: Record<LeaveType, string> = {
+    personal: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    sick: 'bg-red-500/20 text-red-400 border-red-500/30',
+    casual: 'bg-green-500/20 text-green-400 border-green-500/30',
+    holiday: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+    other: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+  };
+  const typeLabels: Record<LeaveType, string> = {
+    personal: 'P',
+    sick: 'S',
+    casual: 'C',
+    holiday: 'H',
+    other: 'O',
+  };
+
+  // Helper: get leave for a specific date
+  const getLeaveForDate = (year: number, month: number, day: number): LeaveRecord | undefined => {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return leaves.find(l => l.date === dateStr);
+  };
+
+  // Render a single month
+  const renderMonth = (monthIndex: number) => {
+    const daysInMonth = new Date(currentYear, monthIndex + 1, 0).getDate();
+    const firstDay = new Date(currentYear, monthIndex, 1).getDay();
+
+    const today = new Date();
+    const isCurrentMonth = today.getMonth() === monthIndex && today.getFullYear() === currentYear;
+    const todayDate = today.getDate();
+
+    return (
+      <div
+        key={monthIndex}
+        className={`bg-gray-800/30 backdrop-blur-sm rounded-xl p-3 border ${
+          isCurrentMonth ? 'border-blue-500/40 ring-2 ring-blue-500/20' : 'border-gray-700/30'
+        } transition-all duration-200 hover:border-gray-500/50`}
+      >
+        {/* Month Header */}
+        <div className="text-center font-semibold text-white text-sm py-1 mb-2 bg-gray-700/30 rounded-lg">
+          {shortMonthNames[monthIndex]}
+          {isCurrentMonth && <span className="ml-1 text-blue-400 text-xs">⬤</span>}
+        </div>
+
+        {/* Day Headers */}
+        <div className="grid grid-cols-7 gap-0.5 mb-1">
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+            <div key={i} className="text-center text-[8px] font-medium text-gray-500">
+              {d}
+            </div>
+          ))}
+        </div>
+
+        {/* Days Grid */}
+        <div className="grid grid-cols-7 gap-0.5">
+          {/* Empty cells for days before 1st */}
+          {Array.from({ length: firstDay }).map((_, i) => (
+            <div key={`empty-${i}`} className="aspect-square" />
+          ))}
+
+          {/* Actual days */}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1;
+            const leave = getLeaveForDate(currentYear, monthIndex, day);
+            const isToday = isCurrentMonth && day === todayDate;
+
+            return (
+              <div
+                key={day}
+                className={`
+                  aspect-square flex flex-col items-center justify-center rounded-lg text-[10px] font-medium
+                  transition-all duration-100
+                  ${isToday ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/40' : 'text-gray-300 hover:bg-gray-700/30'}
+                  ${leave ? 'bg-opacity-20' : ''}
+                `}
               >
-                <MenuItem value="all">All Employees</MenuItem>
-                {employees.map(emp => (
-                  <MenuItem key={emp.id} value={emp.id}>{emp.name} ({emp.role})</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <FormControl fullWidth sx={{ bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
-              <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Leave Type</InputLabel>
-              <Select
-                value={selectedLeaveType}
-                onChange={(e) => setSelectedLeaveType(e.target.value)}
-                label="Leave Type"
-                sx={{ color: 'white', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' } }}
-              >
-                <MenuItem value="all">All Types</MenuItem>
-                {Object.entries(leaveTypeConfig).map(([key, config]) => (
-                  <MenuItem key={key} value={key}>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Box sx={{ width: 12, height: 12, borderRadius: 2, bgcolor: config.color }} />
-                      {config.label}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Box display="flex" gap={1}>
-              <Button
-                variant="contained"
-                onClick={() => setOpenDialog(true)}
-                sx={{ bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' } }}
-              >
-                <Add sx={{ mr: 1 }} /> Apply Leave
-              </Button>
-              <Button variant="outlined" onClick={goToCurrentMonth} sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}>
-                <Today sx={{ mr: 1 }} /> Today
-              </Button>
-            </Box>
-          </Grid>
-        </Grid>
-
-        {/* Statistics Cards */}
-        <Grid container spacing={2} mb={3}>
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Card sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 3 }}>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>Total Leaves</Typography>
-              <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>{totalLeaves}</Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Card sx={{ p: 2, bgcolor: 'rgba(16,185,129,0.1)', borderRadius: 3, border: '1px solid rgba(16,185,129,0.3)' }}>
-              <Typography variant="body2" sx={{ color: '#10b981' }}>Approved</Typography>
-              <Typography variant="h4" fontWeight="bold" sx={{ color: '#10b981' }}>{approvedLeaves}</Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Card sx={{ p: 2, bgcolor: 'rgba(245,158,11,0.1)', borderRadius: 3, border: '1px solid rgba(245,158,11,0.3)' }}>
-              <Typography variant="body2" sx={{ color: '#f59e0b' }}>Pending</Typography>
-              <Typography variant="h4" fontWeight="bold" sx={{ color: '#f59e0b' }}>{pendingLeaves}</Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Card sx={{ p: 2, bgcolor: 'rgba(59,130,246,0.1)', borderRadius: 3, border: '1px solid rgba(59,130,246,0.3)' }}>
-              <Typography variant="body2" sx={{ color: '#3b82f6' }}>Leave Types</Typography>
-              <Typography variant="h4" fontWeight="bold" sx={{ color: '#3b82f6' }}>{Object.keys(leaveTypeConfig).length}</Typography>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Calendar Navigation */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <IconButton onClick={prevMonth} sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
-            <ChevronLeft />
-          </IconButton>
-          <Typography variant="h5" fontWeight="bold" sx={{ color: 'white' }}>
-            {monthNames[selectedMonth]} {selectedYear}
-          </Typography>
-          <IconButton onClick={nextMonth} sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
-            <ChevronRight />
-          </IconButton>
-        </Box>
-
-        {/* Calendar Grid */}
-        <Card sx={{ borderRadius: 4, overflow: 'hidden', bgcolor: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' }}>
-          {/* Weekday Headers */}
-          <Grid container sx={{ bgcolor: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-            {weekDays.map(day => (
-              <Grid key={day} size={{ xs: 12/7 }} sx={{ p: 2, textAlign: 'center' }}>
-                <Typography fontWeight="bold" sx={{ color: 'rgba(255,255,255,0.8)' }}>{day}</Typography>
-              </Grid>
-            ))}
-          </Grid>
-
-          {/* Calendar Days */}
-          <Grid container>
-            {calendarDays.map((day, index) => {
-              const dateLeaves = day ? getLeavesForDate(selectedYear, selectedMonth, day) : [];
-              const leaveCount = day ? getLeavesCountForDate(selectedYear, selectedMonth, day) : 0;
-              const leaveDistribution = day ? getLeaveTypeDistribution(selectedYear, selectedMonth, day) : {};
-              
-              return (
-                <Grid 
-                  key={index} 
-                  size={{ xs: 12/7 }} 
-                  sx={{ 
-                    minHeight: 120, 
-                    p: 1, 
-                    borderRight: '1px solid rgba(255,255,255,0.05)',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    bgcolor: day ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.2)',
-                    '&:hover': day ? { bgcolor: 'rgba(255,255,255,0.08)' } : {},
-                    cursor: day ? 'pointer' : 'default',
-                  }}
-                  onClick={() => {
-                    if (day && dateLeaves.length > 0) {
-                      setSelectedLeave(dateLeaves[0]);
-                    }
-                  }}
-                >
-                  {day && (
-                    <>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: 'rgba(255,255,255,0.9)', 
-                          fontWeight: 'bold',
-                          mb: 1,
-                        }}
-                      >
-                        {day}
-                      </Typography>
-                      
-                      {leaveCount > 0 && (
-                        <Box display="flex" flexWrap="wrap" gap={0.5}>
-                          {Object.entries(leaveDistribution).map(([type, count]) => (
-                            <Tooltip key={type} title={`${leaveTypeConfig[type as keyof typeof leaveTypeConfig].label}: ${count}`}>
-                              <Box
-                                sx={{
-                                  width: 8,
-                                  height: 8,
-                                  borderRadius: '50%',
-                                  bgcolor: leaveTypeConfig[type as keyof typeof leaveTypeConfig].color,
-                                  display: 'inline-block',
-                                }}
-                              />
-                            </Tooltip>
-                          ))}
-                        </Box>
-                      )}
-                      
-                      {leaveCount > 0 && (
-                        <Badge 
-                          badgeContent={leaveCount} 
-                          color="error" 
-                          sx={{ 
-                            '& .MuiBadge-badge': { 
-                              fontSize: 10, 
-                              height: 18, 
-                              minWidth: 18,
-                              bgcolor: '#ef4444',
-                              top: -5,
-                              right: -5,
-                            } 
-                          }}
-                        />
-                      )}
-                      
-                      {/* Show leave type labels for first few leaves */}
-                      {dateLeaves.slice(0, 2).map((leave, idx) => (
-                        <Box 
-                          key={idx}
-                          sx={{ 
-                            mt: 0.5, 
-                            p: 0.3, 
-                            borderRadius: 1,
-                            fontSize: 10,
-                            bgcolor: `${leaveTypeConfig[leave.leaveType].color}20`,
-                            color: leaveTypeConfig[leave.leaveType].color,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {leave.employeeName.split(' ')[0]}: {leaveTypeConfig[leave.leaveType].label.substring(0, 8)}
-                        </Box>
-                      ))}
-                      {dateLeaves.length > 2 && (
-                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mt: 0.5, display: 'block' }}>
-                          +{dateLeaves.length - 2} more
-                        </Typography>
-                      )}
-                    </>
-                  )}
-                </Grid>
-              );
-            })}
-          </Grid>
-        </Card>
-
-        {/* Legend */}
-        <Box mt={3}>
-          <Typography variant="body2" fontWeight="bold" sx={{ color: 'white', mb: 1 }}>
-            Leave Type Legend
-          </Typography>
-          <Box display="flex" flexWrap="wrap" gap={2}>
-            {Object.entries(leaveTypeConfig).map(([key, config]) => (
-              <Box key={key} display="flex" alignItems="center" gap={1}>
-                <Box sx={{ width: 16, height: 16, borderRadius: 2, bgcolor: config.color }} />
-                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                  {config.label}
-                </Typography>
-                <Typography variant="caption" fontWeight="bold" sx={{ color: config.color }}>
-                  ({leaveTypeStats[key] || 0})
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-
-        {/* Leave Details Dialog */}
-        <Dialog open={!!selectedLeave} onClose={() => setSelectedLeave(null)} maxWidth="sm" fullWidth>
-          {selectedLeave && (
-            <>
-              <DialogTitle sx={{ bgcolor: '#1e293b', color: 'white', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: 2, bgcolor: leaveTypeConfig[selectedLeave.leaveType].color }} />
-                  Leave Details - {selectedLeave.employeeName}
-                </Box>
-              </DialogTitle>
-              <DialogContent sx={{ bgcolor: '#0f172a', py: 3 }}>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 6 }}>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Leave Type</Typography>
-                    <Typography variant="body1" fontWeight="bold" sx={{ color: leaveTypeConfig[selectedLeave.leaveType].color }}>
-                      {leaveTypeConfig[selectedLeave.leaveType].label}
-                    </Typography>
-                  </Grid>
-                  <Grid size={{ xs: 6 }}>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Status</Typography>
-                    <Box mt={0.5}>{getStatusBadge(selectedLeave.status)}</Box>
-                  </Grid>
-                  <Grid size={{ xs: 6 }}>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Start Date</Typography>
-                    <Typography variant="body2" sx={{ color: 'white' }}>{new Date(selectedLeave.startDate).toLocaleDateString()}</Typography>
-                  </Grid>
-                  <Grid size={{ xs: 6 }}>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>End Date</Typography>
-                    <Typography variant="body2" sx={{ color: 'white' }}>{new Date(selectedLeave.endDate).toLocaleDateString()}</Typography>
-                  </Grid>
-                  <Grid size={{ xs: 12 }}>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Reason</Typography>
-                    <Typography variant="body2" sx={{ color: 'white' }}>{selectedLeave.reason}</Typography>
-                  </Grid>
-                  <Grid size={{ xs: 12 }}>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Applied On</Typography>
-                    <Typography variant="body2" sx={{ color: 'white' }}>{new Date(selectedLeave.appliedOn).toLocaleDateString()}</Typography>
-                  </Grid>
-                  {selectedLeave.approvedBy && (
-                    <>
-                      <Grid size={{ xs: 6 }}>
-                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Approved By</Typography>
-                        <Typography variant="body2" sx={{ color: 'white' }}>{selectedLeave.approvedBy}</Typography>
-                      </Grid>
-                      <Grid size={{ xs: 6 }}>
-                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Approved On</Typography>
-                        <Typography variant="body2" sx={{ color: 'white' }}>{selectedLeave.approvedOn && new Date(selectedLeave.approvedOn).toLocaleDateString()}</Typography>
-                      </Grid>
-                    </>
-                  )}
-                </Grid>
-              </DialogContent>
-              <DialogActions sx={{ bgcolor: '#1e293b', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                <Button onClick={() => setSelectedLeave(null)} sx={{ color: 'white' }}>Close</Button>
-                {selectedLeave.status === 'pending' && (
-                  <>
-                    <Button variant="contained" sx={{ bgcolor: '#10b981' }}>Approve</Button>
-                    <Button variant="contained" sx={{ bgcolor: '#ef4444' }}>Reject</Button>
-                  </>
+                <span className={isToday ? 'font-bold' : ''}>{day}</span>
+                {leave && (
+                  <span className={`
+                    text-[7px] px-0.5 rounded-full font-bold
+                    ${typeColors[leave.type].split(' ')[0]} ${typeColors[leave.type].split(' ')[1]}
+                  `}>
+                    {typeLabels[leave.type]}
+                  </span>
                 )}
-              </DialogActions>
-            </>
-          )}
-        </Dialog>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
-        {/* Apply Leave Dialog */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle sx={{ bgcolor: '#1e293b', color: 'white' }}>Apply for Leave</DialogTitle>
-          <DialogContent sx={{ bgcolor: '#0f172a', py: 3 }}>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12 }}>
-                <FormControl fullWidth>
-                  <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Employee</InputLabel>
-                  <Select label="Employee" sx={{ color: 'white' }}>
-                    {employees.map(emp => (
-                      <MenuItem key={emp.id} value={emp.id}>{emp.name}</MenuItem>
+  // ----- Statistics - Full Year -----
+  const totalLeaves = leaves.length;
+  const stats = {
+    personal: leaves.filter(l => l.type === 'personal').length,
+    sick: leaves.filter(l => l.type === 'sick').length,
+    casual: leaves.filter(l => l.type === 'casual').length,
+    holiday: leaves.filter(l => l.type === 'holiday').length,
+    other: leaves.filter(l => l.type === 'other').length,
+  };
+
+  // Group leaves by month for details
+  const leavesByMonth = monthNames.map((_, idx) => {
+    return leaves.filter(l => new Date(l.date).getMonth() === idx);
+  });
+
+  // ----- Render -----
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-900 to-blue-900 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-2">
+              <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Leave Calendar {currentYear}
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">Full year view with all leaves</p>
+          </div>
+          <button
+            onClick={() => window.print()}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white transition flex items-center gap-2 shadow-lg no-print"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Print
+          </button>
+        </div>
+
+        {/* Summary Stats Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
+            <p className="text-gray-400 text-xs">Total Leaves</p>
+            <p className="text-2xl font-bold text-white">{totalLeaves}</p>
+          </div>
+          <div className="bg-blue-500/10 backdrop-blur-sm rounded-xl p-3 border border-blue-500/20 text-center">
+            <p className="text-gray-400 text-xs">🟦 Personal</p>
+            <p className="text-2xl font-bold text-blue-400">{stats.personal}</p>
+          </div>
+          <div className="bg-red-500/10 backdrop-blur-sm rounded-xl p-3 border border-red-500/20 text-center">
+            <p className="text-gray-400 text-xs">🟥 Sick</p>
+            <p className="text-2xl font-bold text-red-400">{stats.sick}</p>
+          </div>
+          <div className="bg-green-500/10 backdrop-blur-sm rounded-xl p-3 border border-green-500/20 text-center">
+            <p className="text-gray-400 text-xs">🟩 Casual</p>
+            <p className="text-2xl font-bold text-green-400">{stats.casual}</p>
+          </div>
+          <div className="bg-yellow-500/10 backdrop-blur-sm rounded-xl p-3 border border-yellow-500/20 text-center">
+            <p className="text-gray-400 text-xs">🟨 Holiday</p>
+            <p className="text-2xl font-bold text-yellow-400">{stats.holiday}</p>
+          </div>
+        </div>
+
+       
+
+        {/* Detailed Month-wise List */}
+        <div className="mt-8 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-4">
+          <h3 className="text-white font-semibold text-lg mb-3 flex items-center gap-2">
+            <span>📋</span> Month-wise Leave Details
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {leavesByMonth.map((monthLeaves, idx) => (
+              <div key={idx} className="bg-gray-800/30 rounded-xl p-3 border border-gray-700/30">
+                <div className="font-medium text-blue-400 text-sm mb-2 flex justify-between">
+                  <span>{monthNames[idx]}</span>
+                  <span className="text-gray-400 text-xs">{monthLeaves.length} leaves</span>
+                </div>
+                {monthLeaves.length === 0 ? (
+                  <p className="text-gray-500 text-xs">No leaves</p>
+                ) : (
+                  <div className="space-y-1 max-h-24 overflow-y-auto">
+                    {monthLeaves.map((leave, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs text-gray-300">
+                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${typeColors[leave.type].split(' ')[0]} ${typeColors[leave.type].split(' ')[1]}`}>
+                          {typeLabels[leave.type]}
+                        </span>
+                        <span>{new Date(leave.date).getDate()}</span>
+                        <span className="text-gray-500 text-[10px]">{leave.reason || ''}</span>
+                      </div>
                     ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <FormControl fullWidth>
-                  <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Leave Type</InputLabel>
-                  <Select label="Leave Type" sx={{ color: 'white' }}>
-                    {Object.entries(leaveTypeConfig).map(([key, config]) => (
-                      <MenuItem key={key} value={key}>{config.label}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <TextField fullWidth type="date" label="Start Date" InputLabelProps={{ shrink: true }} sx={{ input: { color: 'white' } }} />
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <TextField fullWidth type="date" label="End Date" InputLabelProps={{ shrink: true }} sx={{ input: { color: 'white' } }} />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField fullWidth multiline rows={3} label="Reason" sx={{ textarea: { color: 'white' } }} />
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions sx={{ bgcolor: '#1e293b' }}>
-            <Button onClick={() => setOpenDialog(false)} sx={{ color: 'white' }}>Cancel</Button>
-            <Button variant="contained" sx={{ bgcolor: '#10b981' }}>Submit Application</Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    </Box>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
-export default LeaveCalendar;
+export default FullYearLeaveCalendar;

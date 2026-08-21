@@ -47,6 +47,9 @@ const HomeworkManagement: React.FC = () => {
   const [showSyllabusModal, setShowSyllabusModal] = useState(false);
   const [editingHomework, setEditingHomework] = useState<Homework | null>(null);
   const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null);
+
+  console.log(selectedHomework,'====selectedHomework===');
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSubject, setFilterSubject] = useState<string>('all');
   const [selectedSyllabus, setSelectedSyllabus] = useState<SyllabusProgress | null>(null);

@@ -53,18 +53,14 @@ interface SportsAchievement {
   certificateIssued: boolean;
 }
 
-interface Certificate {
-  id: string;
-  studentId: string;
-  studentName: string;
-  certificateType: 'transfer' | 'sports' | 'merit' | 'participation';
-  issueDate: string;
-  downloadUrl: string;
-}
+
+
+
+
 
 const ReportsAndCertificates: React.FC = () => {
   const [activeTab, setActiveTab] = useState('transfer');
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [showLeaveForm, setShowLeaveForm] = useState(false);
   const [showComplaintForm, setShowComplaintForm] = useState(false);
@@ -188,6 +184,9 @@ const ReportsAndCertificates: React.FC = () => {
     const studentId = formData.get('studentId') as string;
     const leavingDate = formData.get('leavingDate') as string;
     const reason = formData.get('reason') as string;
+
+    console.log(reason,leavingDate);
+    
     
     const student = students.find(s => s.id === studentId);
     if (student) {

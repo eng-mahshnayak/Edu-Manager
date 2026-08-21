@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
-} from 'recharts';
+import axios from 'axios';
 import toast from 'react-hot-toast';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
+// ==================== Types ====================
 interface Expense {
-  id: string;
+  _id: string;
+  expenseId: string;
   date: string;
   category: string;
   subCategory?: string;
@@ -31,38 +40,63 @@ interface ExpenseCategory {
   budget?: number;
 }
 
+// ==================== Main Component ====================
 const ExpenseManagement: React.FC = () => {
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+  // ----- State -----
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('all');
-  const [startDate, setStartDate] = useState<string>(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState<string>(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
+  );
   const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportType, setReportType] = useState<'daily' | 'monthly' | 'yearly' | 'category'>('monthly');
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-  const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    (new Date().getMonth() + 1).toString().padStart(2, '0')
+  );
 
-  // Expense Categories
+  // ----- Expense Categories -----
   const expenseCategories: ExpenseCategory[] = [
     {
       id: 'SAL',
       name: 'Staff Salary',
       icon: '💰',
       color: '#10B981',
-      subCategories: ['Teachers Salary', 'Drivers Salary', 'Maid Salary', 'Labour Salary', 'Admin Salary', 'Bonus', 'Overtime'],
-      budget: 500000
+      subCategories: [
+        'Teachers Salary',
+        'Drivers Salary',
+        'Maid Salary',
+        'Labour Salary',
+        'Admin Salary',
+        'Bonus',
+        'Overtime',
+      ],
+      budget: 500000,
     },
     {
       id: 'INF',
       name: 'Infrastructure',
       icon: '🏗️',
       color: '#3B82F6',
-      subCategories: ['Building Maintenance', 'Classroom Repair', 'Furniture', 'Electrical Work', 'Plumbing', 'Painting', 'Construction'],
-      budget: 200000
+      subCategories: [
+        'Building Maintenance',
+        'Classroom Repair',
+        'Furniture',
+        'Electrical Work',
+        'Plumbing',
+        'Painting',
+        'Construction',
+      ],
+      budget: 200000,
     },
     {
       id: 'UTL',
@@ -70,15 +104,23 @@ const ExpenseManagement: React.FC = () => {
       icon: '💡',
       color: '#F59E0B',
       subCategories: ['Electricity Bill', 'Water Bill', 'Internet Bill', 'Phone Bill', 'Gas Bill', 'Generator Fuel'],
-      budget: 100000
+      budget: 100000,
     },
     {
       id: 'EQP',
       name: 'Equipment',
       icon: '💻',
       color: '#8B5CF6',
-      subCategories: ['Computers', 'Projectors', 'Smart Boards', 'Sports Equipment', 'Lab Equipment', 'Library Books', 'Furniture'],
-      budget: 150000
+      subCategories: [
+        'Computers',
+        'Projectors',
+        'Smart Boards',
+        'Sports Equipment',
+        'Lab Equipment',
+        'Library Books',
+        'Furniture',
+      ],
+      budget: 150000,
     },
     {
       id: 'SUP',
@@ -86,7 +128,7 @@ const ExpenseManagement: React.FC = () => {
       icon: '📚',
       color: '#EC4899',
       subCategories: ['Stationery', 'Printing Materials', 'Cleaning Supplies', 'First Aid', 'Uniforms', 'Books', 'Notebooks'],
-      budget: 75000
+      budget: 75000,
     },
     {
       id: 'TRA',
@@ -94,7 +136,7 @@ const ExpenseManagement: React.FC = () => {
       icon: '🚌',
       color: '#EF4444',
       subCategories: ['Fuel', 'Vehicle Maintenance', 'Driver Salary', 'Insurance', 'Rent', 'Repairs'],
-      budget: 80000
+      budget: 80000,
     },
     {
       id: 'EVE',
@@ -102,7 +144,7 @@ const ExpenseManagement: React.FC = () => {
       icon: '🎉',
       color: '#F97316',
       subCategories: ['Annual Day', 'Sports Day', 'Picnic', 'Workshops', 'Competitions', 'Parent Meeting', 'Festivals'],
-      budget: 100000
+      budget: 100000,
     },
     {
       id: 'MKT',
@@ -110,7 +152,7 @@ const ExpenseManagement: React.FC = () => {
       icon: '📢',
       color: '#06B6D4',
       subCategories: ['Advertising', 'Printing', 'Social Media', 'Brochures', 'Website', 'Events'],
-      budget: 50000
+      budget: 50000,
     },
     {
       id: 'MSC',
@@ -118,346 +160,191 @@ const ExpenseManagement: React.FC = () => {
       icon: '📦',
       color: '#6B7280',
       subCategories: ['Misc Expenses', 'Emergency', 'Donations', 'Gifts', 'Refreshments'],
-      budget: 30000
-    }
+      budget: 30000,
+    },
   ];
 
-  // Static expense data
-  const initialExpenses: Expense[] = [
-    {
-      id: 'EXP001',
-      date: '2024-01-05',
-      category: 'Staff Salary',
-      subCategory: 'Teachers Salary',
-      amount: 250000,
-      description: 'January teachers salary payment',
-      paymentMethod: 'bank',
-      paymentStatus: 'paid',
-      billNumber: 'SAL-JAN-001',
-      vendorName: 'All Teachers',
-      approvedBy: 'Principal',
-      remarks: 'Regular monthly salary'
-    },
-    {
-      id: 'EXP002',
-      date: '2024-01-10',
-      category: 'Utilities',
-      subCategory: 'Electricity Bill',
-      amount: 45000,
-      description: 'December electricity bill',
-      paymentMethod: 'online',
-      paymentStatus: 'paid',
-      billNumber: 'EB-2024-001',
-      vendorName: 'Electricity Board',
-      approvedBy: 'Principal',
-      remarks: 'Winter month bill'
-    },
-    {
-      id: 'EXP003',
-      date: '2024-01-15',
-      category: 'Equipment',
-      subCategory: 'Computers',
-      amount: 120000,
-      description: '10 new computers for computer lab',
-      paymentMethod: 'bank',
-      paymentStatus: 'paid',
-      billNumber: 'COMP-2024-001',
-      vendorName: 'Dell India',
-      approvedBy: 'Principal',
-      remarks: 'Lab upgrade'
-    },
-    {
-      id: 'EXP004',
-      date: '2024-01-20',
-      category: 'Infrastructure',
-      subCategory: 'Building Maintenance',
-      amount: 35000,
-      description: 'Classroom paint and repair',
-      paymentMethod: 'cash',
-      paymentStatus: 'paid',
-      billNumber: 'MAINT-001',
-      vendorName: 'Sharma Construction',
-      approvedBy: 'Admin',
-      remarks: 'Annual maintenance'
-    },
-    {
-      id: 'EXP005',
-      date: '2024-02-05',
-      category: 'Staff Salary',
-      subCategory: 'Drivers Salary',
-      amount: 45000,
-      description: 'February drivers salary',
-      paymentMethod: 'bank',
-      paymentStatus: 'paid',
-      billNumber: 'SAL-FEB-002',
-      vendorName: 'All Drivers',
-      approvedBy: 'Principal'
-    },
-    {
-      id: 'EXP006',
-      date: '2024-02-12',
-      category: 'Events',
-      subCategory: 'Annual Day',
-      amount: 85000,
-      description: 'Annual day celebration expenses',
-      paymentMethod: 'bank',
-      paymentStatus: 'paid',
-      billNumber: 'EVENT-001',
-      vendorName: 'Event Planners',
-      approvedBy: 'Principal',
-      remarks: 'Decoration, food, sound system'
-    },
-    {
-      id: 'EXP007',
-      date: '2024-02-18',
-      category: 'Transport',
-      subCategory: 'Fuel',
-      amount: 25000,
-      description: 'School bus diesel for February',
-      paymentMethod: 'online',
-      paymentStatus: 'paid',
-      billNumber: 'FUEL-002',
-      vendorName: 'Indian Oil',
-      approvedBy: 'Transport Manager'
-    },
-    {
-      id: 'EXP008',
-      date: '2024-02-25',
-      category: 'Supplies',
-      subCategory: 'Stationery',
-      amount: 35000,
-      description: 'Stationery for all classes',
-      paymentMethod: 'bank',
-      paymentStatus: 'paid',
-      billNumber: 'STAT-001',
-      vendorName: 'Stationery Mart',
-      approvedBy: 'Store Incharge'
-    },
-    {
-      id: 'EXP009',
-      date: '2024-03-05',
-      category: 'Staff Salary',
-      subCategory: 'Maid Salary',
-      amount: 30000,
-      description: 'March maid and cleaning staff salary',
-      paymentMethod: 'cash',
-      paymentStatus: 'paid',
-      billNumber: 'SAL-MAR-003',
-      vendorName: 'Cleaning Staff',
-      approvedBy: 'Principal'
-    },
-    {
-      id: 'EXP010',
-      date: '2024-03-10',
-      category: 'Utilities',
-      subCategory: 'Water Bill',
-      amount: 12000,
-      description: 'Water supply bill',
-      paymentMethod: 'online',
-      paymentStatus: 'paid',
-      billNumber: 'WATER-001',
-      vendorName: 'Water Board',
-      approvedBy: 'Admin'
-    },
-    {
-      id: 'EXP011',
-      date: '2024-03-15',
-      category: 'Marketing',
-      subCategory: 'Advertising',
-      amount: 40000,
-      description: 'New admission campaign',
-      paymentMethod: 'bank',
-      paymentStatus: 'paid',
-      billNumber: 'AD-001',
-      vendorName: 'Media Group',
-      approvedBy: 'Principal'
-    },
-    {
-      id: 'EXP012',
-      date: '2024-03-20',
-      category: 'Equipment',
-      subCategory: 'Sports Equipment',
-      amount: 55000,
-      description: 'Sports day equipment purchase',
-      paymentMethod: 'bank',
-      paymentStatus: 'paid',
-      billNumber: 'SPORT-001',
-      vendorName: 'Sports Store',
-      approvedBy: 'Sports Teacher'
-    },
-    {
-      id: 'EXP013',
-      date: '2024-04-05',
-      category: 'Staff Salary',
-      subCategory: 'Admin Salary',
-      amount: 80000,
-      description: 'April admin staff salary',
-      paymentMethod: 'bank',
-      paymentStatus: 'paid',
-      billNumber: 'SAL-APR-004',
-      vendorName: 'Admin Staff',
-      approvedBy: 'Principal'
-    },
-    {
-      id: 'EXP014',
-      date: '2024-04-08',
-      category: 'Infrastructure',
-      subCategory: 'Electrical Work',
-      amount: 28000,
-      description: 'Classroom fan and light repair',
-      paymentMethod: 'cash',
-      paymentStatus: 'paid',
-      billNumber: 'ELEC-001',
-      vendorName: 'Electrical Works',
-      approvedBy: 'Admin'
-    },
-    {
-      id: 'EXP015',
-      date: '2024-04-15',
-      category: 'Miscellaneous',
-      subCategory: 'Refreshments',
-      amount: 15000,
-      description: 'Parent-teacher meeting refreshments',
-      paymentMethod: 'cash',
-      paymentStatus: 'paid',
-      billNumber: 'PTM-001',
-      vendorName: 'Catering Service',
-      approvedBy: 'Principal'
+  // ----- API Functions -----
+  const fetchExpenses = async () => {
+    setLoading(true);
+    try {
+      const params: any = {};
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      if (selectedCategory !== 'all') params.category = selectedCategory;
+      if (selectedPaymentMethod !== 'all') params.paymentMethod = selectedPaymentMethod;
+      if (searchTerm) params.search = searchTerm;
+
+      const res = await axios.get(`${API_BASE}/expenses`, { params });
+      if (res.data.status) {
+        setExpenses(res.data.data);
+      } else {
+        toast.error(res.data.message || 'Failed to fetch expenses');
+      }
+    } catch (error) {
+      toast.error('Server error while fetching expenses');
+    } finally {
+      setLoading(false);
     }
-  ];
-
-  useEffect(() => {
-    setExpenses(initialExpenses);
-  }, []);
-
-  // Filter expenses based on criteria
-  const filteredExpenses = expenses.filter(expense => {
-    const matchesCategory = selectedCategory === 'all' || expense.category === selectedCategory;
-    const matchesPaymentMethod = selectedPaymentMethod === 'all' || expense.paymentMethod === selectedPaymentMethod;
-    const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         expense.vendorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         expense.billNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         expense.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDate = expense.date >= startDate && expense.date <= endDate;
-    return matchesCategory && matchesPaymentMethod && matchesSearch && matchesDate;
-  });
-
-  // Get date range filtered expenses for reports
-  const getDateRangeExpenses = () => {
-    return expenses.filter(expense => expense.date >= startDate && expense.date <= endDate);
   };
 
-  // Calculate statistics
-  const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const totalPaid = filteredExpenses.filter(e => e.paymentStatus === 'paid').reduce((sum, e) => sum + e.amount, 0);
-  const totalPending = filteredExpenses.filter(e => e.paymentStatus === 'pending').reduce((sum, e) => sum + e.amount, 0);
-  const totalPartial = filteredExpenses.filter(e => e.paymentStatus === 'partial').reduce((sum, e) => sum + e.amount, 0);
-  
-  // Category wise expenses
-  const categoryWiseExpenses = expenseCategories.map(cat => ({
-    name: cat.name,
-    amount: filteredExpenses.filter(e => e.category === cat.name).reduce((sum, e) => sum + e.amount, 0),
-    budget: cat.budget || 0,
-    color: cat.color,
-    icon: cat.icon
-  })).filter(c => c.amount > 0);
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
 
-  // Monthly expenses for current year
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchExpenses();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [startDate, endDate, selectedCategory, selectedPaymentMethod, searchTerm]);
+
+  // ----- CRUD Handlers -----
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    const data = {
+      date: formData.get('date') as string,
+      category: formData.get('category') as string,
+      subCategory: formData.get('subCategory') as string || '',
+      amount: parseFloat(formData.get('amount') as string),
+      description: formData.get('description') as string,
+      paymentMethod: formData.get('paymentMethod') as Expense['paymentMethod'],
+      paymentStatus: formData.get('paymentStatus') as Expense['paymentStatus'],
+      billNumber: (formData.get('billNumber') as string) || '',
+      vendorName: (formData.get('vendorName') as string) || '',
+      vendorPhone: (formData.get('vendorPhone') as string) || '',
+      approvedBy: (formData.get('approvedBy') as string) || '',
+      remarks: (formData.get('remarks') as string) || '',
+    };
+
+    setLoading(true);
+    try {
+      let res;
+      if (editingExpense) {
+        res = await axios.put(`${API_BASE}/expenses/${editingExpense._id}`, data);
+      } else {
+        res = await axios.post(`${API_BASE}/expenses`, data);
+      }
+      if (res.data.status) {
+        toast.success(res.data.message);
+        setShowModal(false);
+        setEditingExpense(null);
+        fetchExpenses();
+      } else {
+        toast.error(res.data.message || 'Operation failed');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Server error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (expense: Expense) => {
+    if (!window.confirm(`Delete expense of ₹${expense.amount.toLocaleString()}?`)) return;
+    try {
+      const res = await axios.delete(`${API_BASE}/expenses/${expense._id}`);
+      if (res.data.status) {
+        toast.success('Deleted!');
+        fetchExpenses();
+      }
+    } catch (error) {
+      toast.error('Delete failed');
+    }
+  };
+
+  const handleEdit = async (expense: Expense) => {
+    try {
+      const res = await axios.get(`${API_BASE}/expenses/${expense._id}`);
+      if (res.data.status) {
+        setEditingExpense(res.data.data);
+        setShowModal(true);
+      }
+    } catch (error) {
+      toast.error('Failed to load expense');
+    }
+  };
+
+  // ----- Computed Data -----
+  const filteredExpenses = expenses; // Already filtered by API
+
+  const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const totalPaid = filteredExpenses.filter((e) => e.paymentStatus === 'paid').reduce((sum, e) => sum + e.amount, 0);
+  const totalPending = filteredExpenses.filter((e) => e.paymentStatus === 'pending').reduce((sum, e) => sum + e.amount, 0);
+  const totalPartial = filteredExpenses.filter((e) => e.paymentStatus === 'partial').reduce((sum, e) => sum + e.amount, 0);
+
+  const categoryWiseExpenses = expenseCategories
+    .map((cat) => ({
+      name: cat.name,
+      amount: filteredExpenses.filter((e) => e.category === cat.name).reduce((sum, e) => sum + e.amount, 0),
+      budget: cat.budget || 0,
+      color: cat.color,
+      icon: cat.icon,
+    }))
+    .filter((c) => c.amount > 0);
+
   const getMonthlyExpenses = () => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months.map((month, index) => {
       const monthNumber = (index + 1).toString().padStart(2, '0');
       const amount = expenses
-        .filter(e => e.date.startsWith(`${selectedYear}-${monthNumber}`))
+        .filter((e) => e.date.startsWith(`${selectedYear}-${monthNumber}`))
         .reduce((sum, e) => sum + e.amount, 0);
       return { month, amount };
     });
   };
 
-  // Handle Add/Update Expense
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    
-    const expenseData: Omit<Expense, 'id'> = {
-      date: formData.get('date') as string,
-      category: formData.get('category') as string,
-      subCategory: formData.get('subCategory') as string,
-      amount: parseFloat(formData.get('amount') as string),
-      description: formData.get('description') as string,
-      paymentMethod: formData.get('paymentMethod') as Expense['paymentMethod'],
-      paymentStatus: formData.get('paymentStatus') as Expense['paymentStatus'],
-      billNumber: formData.get('billNumber') as string || undefined,
-      vendorName: formData.get('vendorName') as string || undefined,
-      vendorPhone: formData.get('vendorPhone') as string || undefined,
-      approvedBy: formData.get('approvedBy') as string || undefined,
-      remarks: formData.get('remarks') as string || undefined
-    };
-
-    if (editingExpense) {
-      setExpenses(prev => prev.map(e => 
-        e.id === editingExpense.id ? { ...expenseData, id: e.id } : e
-      ));
-      toast.success('Expense updated successfully!');
-    } else {
-      const newId = `EXP${String(expenses.length + 1).padStart(3, '0')}`;
-      setExpenses(prev => [...prev, { ...expenseData, id: newId }]);
-      toast.success('Expense added successfully!');
-    }
-    
-    setShowModal(false);
-    setEditingExpense(null);
-  };
-
-  // Handle Delete Expense
-  const handleDelete = (expense: Expense) => {
-    if (window.confirm(`Are you sure you want to delete this expense of ₹${expense.amount.toLocaleString()}?`)) {
-      setExpenses(prev => prev.filter(e => e.id !== expense.id));
-      toast.success('Expense deleted successfully!');
-    }
-  };
-
-  // Get report data based on type
   const getReportData = () => {
     if (reportType === 'daily') {
       const daysInMonth = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0).getDate();
       return Array.from({ length: daysInMonth }, (_, i) => {
         const day = (i + 1).toString().padStart(2, '0');
         const date = `${selectedYear}-${selectedMonth}-${day}`;
-        const amount = expenses.filter(e => e.date === date).reduce((sum, e) => sum + e.amount, 0);
+        const amount = expenses.filter((e) => e.date === date).reduce((sum, e) => sum + e.amount, 0);
         return { day: `${day}`, amount, date };
-      }).filter(d => d.amount > 0);
-    } else if (reportType === 'yearly') {
+      }).filter((d) => d.amount > 0);
+    } else if (reportType === 'yearly' || reportType === 'monthly') {
       return getMonthlyExpenses();
     } else {
       return categoryWiseExpenses;
     }
   };
 
-  // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
-  // Get category icon
   const getCategoryIcon = (categoryName: string) => {
-    const category = expenseCategories.find(c => c.name === categoryName);
+    const category = expenseCategories.find((c) => c.name === categoryName);
     return category ? category.icon : '📋';
   };
 
+  const getCategoryColor = (categoryName: string) => {
+    const category = expenseCategories.find((c) => c.name === categoryName);
+    return category ? category.color : '#6B7280';
+  };
+
+  // ----- Render -----
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-900 to-blue-900 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-2">
-            <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+              />
             </svg>
             Expense Management
           </h1>
@@ -472,14 +359,19 @@ const ExpenseManagement: React.FC = () => {
                 <p className="text-gray-400 text-sm">Total Expenses</p>
                 <p className="text-2xl font-bold text-white">{formatCurrency(totalExpenses)}</p>
               </div>
-              <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-green-500/30">
             <div className="flex items-center justify-between">
               <div>
@@ -488,12 +380,17 @@ const ExpenseManagement: React.FC = () => {
               </div>
               <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-yellow-500/30">
             <div className="flex items-center justify-between">
               <div>
@@ -502,12 +399,17 @@ const ExpenseManagement: React.FC = () => {
               </div>
               <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-orange-500/30">
             <div className="flex items-center justify-between">
               <div>
@@ -532,40 +434,42 @@ const ExpenseManagement: React.FC = () => {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">End Date</label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Category</label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
               >
                 <option value="all">All Categories</option>
-                {expenseCategories.map(cat => (
-                  <option key={cat.id} value={cat.name}>{cat.icon} {cat.name}</option>
+                {expenseCategories.map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {cat.icon} {cat.name}
+                  </option>
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Payment Method</label>
               <select
                 value={selectedPaymentMethod}
                 onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
               >
                 <option value="all">All Methods</option>
                 <option value="cash">💵 Cash</option>
@@ -574,7 +478,7 @@ const ExpenseManagement: React.FC = () => {
                 <option value="online">💻 Online</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Search</label>
               <input
@@ -582,31 +486,36 @@ const ExpenseManagement: React.FC = () => {
                 placeholder="Description, vendor, bill..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-green-500 outline-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 outline-none"
               />
             </div>
           </div>
-          
+
           <div className="flex gap-3 mt-4 pt-4 border-t border-gray-700">
             <button
               onClick={() => {
                 setEditingExpense(null);
                 setShowModal(true);
               }}
-              className="px-5 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 transition-all flex items-center gap-2"
+              className="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Add Expense
             </button>
-            
+
             <button
               onClick={() => setShowReportModal(true)}
               className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-all flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
               </svg>
               Generate Report
             </button>
@@ -615,7 +524,7 @@ const ExpenseManagement: React.FC = () => {
 
         {/* Category Budget Summary */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-          {categoryWiseExpenses.slice(0, 4).map(cat => (
+          {categoryWiseExpenses.slice(0, 4).map((cat) => (
             <div key={cat.name} className="bg-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/10">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -627,8 +536,8 @@ const ExpenseManagement: React.FC = () => {
               {cat.budget > 0 && (
                 <>
                   <div className="flex-1 bg-gray-700 rounded-full h-1.5 mb-1">
-                    <div 
-                      className="bg-green-500 rounded-full h-1.5 transition-all"
+                    <div
+                      className="bg-blue-500 rounded-full h-1.5 transition-all"
                       style={{ width: `${Math.min((cat.amount / cat.budget) * 100, 100)}%` }}
                     />
                   </div>
@@ -647,118 +556,149 @@ const ExpenseManagement: React.FC = () => {
         {/* Expenses Table */}
         <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-800/50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Description</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Category</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Vendor</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Amount</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Payment</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {filteredExpenses.map((expense) => (
-                  <tr key={expense.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-4 py-3 text-sm text-gray-300">
-                      {new Date(expense.date).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-white">{expense.description}</p>
-                        {expense.billNumber && (
-                          <p className="text-xs text-gray-500">Bill: {expense.billNumber}</p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{getCategoryIcon(expense.category)}</span>
-                        <div>
-                          <p className="text-sm text-white">{expense.category}</p>
-                          {expense.subCategory && (
-                            <p className="text-xs text-gray-500">{expense.subCategory}</p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      {expense.vendorName ? (
-                        <div>
-                          <p className="text-sm text-white">{expense.vendorName}</p>
-                          {expense.vendorPhone && (
-                            <p className="text-xs text-gray-500">{expense.vendorPhone}</p>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-500">-</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="text-sm font-semibold text-yellow-400">
-                        {formatCurrency(expense.amount)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        expense.paymentMethod === 'cash' ? 'bg-gray-500/20 text-gray-400' :
-                        expense.paymentMethod === 'bank' ? 'bg-blue-500/20 text-blue-400' :
-                        expense.paymentMethod === 'cheque' ? 'bg-purple-500/20 text-purple-400' :
-                        'bg-cyan-500/20 text-cyan-400'
-                      }`}>
-                        {expense.paymentMethod === 'cash' ? '💵 Cash' :
-                         expense.paymentMethod === 'bank' ? '🏦 Bank' :
-                         expense.paymentMethod === 'cheque' ? '📝 Cheque' : '💻 Online'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        expense.paymentStatus === 'paid' ? 'bg-green-500/20 text-green-400' :
-                        expense.paymentStatus === 'pending' ? 'bg-red-500/20 text-red-400' :
-                        'bg-orange-500/20 text-orange-400'
-                      }`}>
-                        {expense.paymentStatus === 'paid' ? '✓ Paid' :
-                         expense.paymentStatus === 'pending' ? '⏳ Pending' : '🔄 Partial'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => {
-                            setEditingExpense(expense);
-                            setShowModal(true);
-                          }}
-                          className="p-1 text-yellow-400 hover:text-yellow-300 transition-colors"
-                          title="Edit"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(expense)}
-                          className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                          title="Delete"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-800/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Description</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Category</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Vendor</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Amount</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Payment</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {filteredExpenses.map((expense) => (
+                    <tr key={expense._id} className="hover:bg-white/5 transition-colors">
+                      <td className="px-4 py-3 text-sm text-gray-300 font-mono">{expense.expenseId}</td>
+                      <td className="px-4 py-3 text-sm text-gray-300">
+                        {new Date(expense.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-white">{expense.description}</p>
+                          {expense.billNumber && (
+                            <p className="text-xs text-gray-500">Bill: {expense.billNumber}</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{getCategoryIcon(expense.category)}</span>
+                          <div>
+                            <p className="text-sm text-white">{expense.category}</p>
+                            {expense.subCategory && (
+                              <p className="text-xs text-gray-500">{expense.subCategory}</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {expense.vendorName ? (
+                          <div>
+                            <p className="text-sm text-white">{expense.vendorName}</p>
+                            {expense.vendorPhone && (
+                              <p className="text-xs text-gray-500">{expense.vendorPhone}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="text-sm font-semibold text-yellow-400">
+                          {formatCurrency(expense.amount)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            expense.paymentMethod === 'cash'
+                              ? 'bg-gray-500/20 text-gray-400'
+                              : expense.paymentMethod === 'bank'
+                              ? 'bg-blue-500/20 text-blue-400'
+                              : expense.paymentMethod === 'cheque'
+                              ? 'bg-purple-500/20 text-purple-400'
+                              : 'bg-cyan-500/20 text-cyan-400'
+                          }`}
+                        >
+                          {expense.paymentMethod === 'cash'
+                            ? '💵 Cash'
+                            : expense.paymentMethod === 'bank'
+                            ? '🏦 Bank'
+                            : expense.paymentMethod === 'cheque'
+                            ? '📝 Cheque'
+                            : '💻 Online'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            expense.paymentStatus === 'paid'
+                              ? 'bg-green-500/20 text-green-400'
+                              : expense.paymentStatus === 'pending'
+                              ? 'bg-red-500/20 text-red-400'
+                              : 'bg-orange-500/20 text-orange-400'
+                          }`}
+                        >
+                          {expense.paymentStatus === 'paid'
+                            ? '✓ Paid'
+                            : expense.paymentStatus === 'pending'
+                            ? '⏳ Pending'
+                            : '🔄 Partial'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => handleEdit(expense)}
+                            className="p-1 text-yellow-400 hover:text-yellow-300 transition-colors"
+                            title="Edit"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDelete(expense)}
+                            className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                            title="Delete"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {!loading && filteredExpenses.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-400">No expenses found for the selected criteria</p>
+              </div>
+            )}
           </div>
-          {filteredExpenses.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-400">No expenses found for the selected criteria</p>
-            </div>
-          )}
         </div>
 
         {/* Recent Activity Summary */}
@@ -770,7 +710,9 @@ const ExpenseManagement: React.FC = () => {
             <div>
               <h3 className="text-blue-400 font-semibold mb-1">Expense Summary</h3>
               <p className="text-sm text-gray-300">
-                Total expenses from {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}: <strong className="text-yellow-400">{formatCurrency(totalExpenses)}</strong>
+                Total expenses from {new Date(startDate).toLocaleDateString()} to{' '}
+                {new Date(endDate).toLocaleDateString()}:{' '}
+                <strong className="text-yellow-400">{formatCurrency(totalExpenses)}</strong>
                 {totalPending > 0 && ` • Pending: ${formatCurrency(totalPending)}`}
                 {totalPartial > 0 && ` • Partial: ${formatCurrency(totalPartial)}`}
               </p>
@@ -799,7 +741,7 @@ const ExpenseManagement: React.FC = () => {
                 </svg>
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -809,39 +751,45 @@ const ExpenseManagement: React.FC = () => {
                     name="date"
                     defaultValue={editingExpense?.date || new Date().toISOString().split('T')[0]}
                     required
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Category *</label>
                   <select
                     name="category"
                     defaultValue={editingExpense?.category}
                     required
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
                   >
                     <option value="">Select Category</option>
-                    {expenseCategories.map(cat => (
-                      <option key={cat.id} value={cat.name}>{cat.icon} {cat.name}</option>
+                    {expenseCategories.map((cat) => (
+                      <option key={cat.id} value={cat.name}>
+                        {cat.icon} {cat.name}
+                      </option>
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Sub Category</label>
                   <select
                     name="subCategory"
                     defaultValue={editingExpense?.subCategory}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
                   >
                     <option value="">Select Sub Category</option>
-                    {expenseCategories.find(c => c.name === editingExpense?.category)?.subCategories.map(sub => (
-                      <option key={sub} value={sub}>{sub}</option>
-                    ))}
+                    {expenseCategories
+                      .find((c) => c.name === (editingExpense?.category || ''))
+                      ?.subCategories.map((sub) => (
+                        <option key={sub} value={sub}>
+                          {sub}
+                        </option>
+                      ))}
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Amount (₹) *</label>
                   <input
@@ -851,10 +799,10 @@ const ExpenseManagement: React.FC = () => {
                     required
                     min="0"
                     step="0.01"
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
                   />
                 </div>
-                
+
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-300 mb-1">Description *</label>
                   <textarea
@@ -862,18 +810,18 @@ const ExpenseManagement: React.FC = () => {
                     defaultValue={editingExpense?.description}
                     required
                     rows={2}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
                     placeholder="Describe the expense..."
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Payment Method *</label>
                   <select
                     name="paymentMethod"
                     defaultValue={editingExpense?.paymentMethod || 'bank'}
                     required
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
                   >
                     <option value="cash">💵 Cash</option>
                     <option value="bank">🏦 Bank Transfer</option>
@@ -881,81 +829,81 @@ const ExpenseManagement: React.FC = () => {
                     <option value="online">💻 Online Payment</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Payment Status *</label>
                   <select
                     name="paymentStatus"
                     defaultValue={editingExpense?.paymentStatus || 'paid'}
                     required
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
                   >
                     <option value="paid">✓ Paid</option>
                     <option value="pending">⏳ Pending</option>
                     <option value="partial">🔄 Partial</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Bill Number</label>
                   <input
                     type="text"
                     name="billNumber"
                     defaultValue={editingExpense?.billNumber}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
                     placeholder="Optional"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Vendor Name</label>
                   <input
                     type="text"
                     name="vendorName"
                     defaultValue={editingExpense?.vendorName}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
                     placeholder="Optional"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Vendor Phone</label>
                   <input
                     type="tel"
                     name="vendorPhone"
                     defaultValue={editingExpense?.vendorPhone}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
                     placeholder="Optional"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Approved By</label>
                   <input
                     type="text"
                     name="approvedBy"
                     defaultValue={editingExpense?.approvedBy}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
                     placeholder="Optional"
                   />
                 </div>
-                
+
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-300 mb-1">Remarks</label>
                   <textarea
                     name="remarks"
                     defaultValue={editingExpense?.remarks}
                     rows={2}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 outline-none"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 outline-none"
                     placeholder="Additional remarks..."
                   />
                 </div>
               </div>
-              
+
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 transition-all"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all"
                 >
                   {editingExpense ? 'Update Expense' : 'Add Expense'}
                 </button>
@@ -990,9 +938,9 @@ const ExpenseManagement: React.FC = () => {
                 </svg>
               </button>
             </div>
-            
+
             <div className="p-6">
-              <div className="flex gap-4 mb-6">
+              <div className="flex flex-wrap gap-4 mb-6">
                 <select
                   value={reportType}
                   onChange={(e) => setReportType(e.target.value as any)}
@@ -1002,7 +950,7 @@ const ExpenseManagement: React.FC = () => {
                   <option value="monthly">Monthly Report</option>
                   <option value="category">Category Report</option>
                 </select>
-                
+
                 {reportType === 'daily' && (
                   <>
                     <input
@@ -1017,7 +965,7 @@ const ExpenseManagement: React.FC = () => {
                       onChange={(e) => setSelectedMonth(e.target.value)}
                       className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-purple-500 outline-none"
                     >
-                      {Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0')).map(month => (
+                      {Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0')).map((month) => (
                         <option key={month} value={month}>
                           {new Date(2000, parseInt(month) - 1, 1).toLocaleString('default', { month: 'long' })}
                         </option>
@@ -1025,7 +973,7 @@ const ExpenseManagement: React.FC = () => {
                     </select>
                   </>
                 )}
-                
+
                 {reportType === 'monthly' && (
                   <input
                     type="number"
@@ -1036,21 +984,24 @@ const ExpenseManagement: React.FC = () => {
                   />
                 )}
               </div>
-              
+
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={getReportData()}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey={reportType === 'daily' ? 'day' : reportType === 'monthly' ? 'month' : 'name'} stroke="#9CA3AF" />
+                  <XAxis
+                    dataKey={reportType === 'daily' ? 'day' : reportType === 'monthly' ? 'month' : 'name'}
+                    stroke="#9CA3AF"
+                  />
                   <YAxis stroke="#9CA3AF" />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
                     formatter={(value: any) => formatCurrency(value)}
                   />
                   <Legend />
-                  <Bar dataKey="amount" fill="#10B981" name="Expense Amount" />
+                  <Bar dataKey="amount" fill="#3B82F6" name="Expense Amount" />
                 </BarChart>
               </ResponsiveContainer>
-              
+
               {reportType === 'category' && (
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                   {getReportData().map((item: any) => (
@@ -1060,13 +1011,22 @@ const ExpenseManagement: React.FC = () => {
                         <span className="text-yellow-400 font-bold">{formatCurrency(item.amount)}</span>
                       </div>
                       <div className="flex-1 bg-gray-700 rounded-full h-2">
-                        <div 
-                          className="bg-green-500 rounded-full h-2 transition-all"
-                          style={{ width: `${(item.amount / getReportData().reduce((sum: number, d: any) => sum + d.amount, 0)) * 100}%` }}
+                        <div
+                          className="bg-blue-500 rounded-full h-2 transition-all"
+                          style={{
+                            width: `${
+                              (item.amount / getReportData().reduce((sum: number, d: any) => sum + d.amount, 0)) *
+                              100
+                            }%`,
+                          }}
                         />
                       </div>
                       <div className="text-right text-xs text-gray-400 mt-1">
-                        {((item.amount / getReportData().reduce((sum: number, d: any) => sum + d.amount, 0)) * 100).toFixed(1)}% of total
+                        {(
+                          (item.amount / getReportData().reduce((sum: number, d: any) => sum + d.amount, 0)) *
+                          100
+                        ).toFixed(1)}
+                        % of total
                       </div>
                     </div>
                   ))}

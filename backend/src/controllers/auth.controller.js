@@ -423,23 +423,24 @@ const signupMain = async (req, res) => {
 // 🔑 SIGNIN CONTROLLER
 const signin = async (req, res) => {
     try {
+
         const { email, password } = req.body;
+
+        console.log(req.body,'============req.body;==========');
+        
         
         // Validation - Check required fields
         if (!email || !password) {
             return res.json({
                 success: false,
                 statusCode:400,
-                message: 'Please provide email and password'
+                message: 'Please provide username and password'
             });
         }
 
         // Find user by email and explicitly select password
-        const user = await User.findOne({ email:email })   
+        const user = await User.findOne({ username:email })   
         
-        console.log(email,'user');
-        
-
         if (!user) {
             return res.json({
                 success: false,
@@ -451,16 +452,14 @@ const signin = async (req, res) => {
         // Check if user is active
         if (!user.isActive) {
             return res.json({
-                success: false,
+                 success: false,
                  statusCode:403,
                 message: 'Your account has been deactivated. Please contact admin.'
             });
         }
 
 
-        console.log(user.password,password);
-        console.log(user.password!==password);
-        
+       
 
         // Compare password
         if (user.password!==password) {
@@ -473,7 +472,7 @@ const signin = async (req, res) => {
 
         // Generate token
         const token = await generateToken({id:user._id, role:user.role,
-            email: user.email,isActive: user.isActive});
+            username: user.username,isActive: user.isActive});
 
 
        console.log(token,'=============token============');
@@ -488,9 +487,8 @@ const signin = async (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                email: user.email,
+                username: user.username,
                 role: user.role,
-                phoneNumber: user.phoneNumber,
                 isActive: user.isActive
             }
         });

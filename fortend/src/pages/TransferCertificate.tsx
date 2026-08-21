@@ -28,25 +28,25 @@ import {
   InputLabel,
   Tooltip,
   Divider,
-  RadioGroup,
-  Radio,
-  FormControlLabel,
-  FormLabel,
-  Checkbox,
+  // RadioGroup,
+  // Radio,
+  // FormControlLabel,
+  // FormLabel,
+  // Checkbox,
 } from '@mui/material';
 import {
-  Download,
+  // Download,
   Print,
   Visibility,
   Edit,
   Delete,
   Add,
   Close,
-  School,
+  // School,
   Search,
   PictureAsPdf,
-  EventNote,
-  Assignment,
+  // EventNote,
+  // Assignment,
   Cancel,
   CheckCircle,
   Pending,
@@ -104,6 +104,9 @@ const TransferCertificate: React.FC = () => {
   const [filterClass, setFilterClass] = useState<string>('all');
   const [printLoading, setPrintLoading] = useState(false);
   const tcPreviewRef = useRef<HTMLDivElement>(null);
+
+  console.log(tcPreviewRef);
+  
 
   // Static TC data for 5 students
   const initialTCList: TransferCertificate[] = [

@@ -8,8 +8,8 @@ export default function Login() {
 
     const navigate = useNavigate();
 
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const [email, setEmail] = useState("MA123");
+    const [password, setPassword] = useState("Admin@1234");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -161,7 +161,7 @@ export default function Login() {
                         {/* Email */}
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1 transition-colors duration-200 hover:text-blue-400">
-                                Email Address
+                                Username 
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -170,7 +170,7 @@ export default function Login() {
                                     </svg>
                                 </div>
                                 <input
-                                    type="email"
+                                    type="text"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="principal@school.edu"
@@ -224,7 +224,7 @@ export default function Login() {
 
                         {/* Remember me & Forgot password */}
                         <div className="flex items-center justify-between">
-                            <label className="flex items-center gap-2 cursor-pointer group">
+                            {/* <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
                                     type="checkbox"
                                     checked={rememberMe}
@@ -235,14 +235,17 @@ export default function Login() {
                                 <span className="text-sm text-gray-400 transition-colors duration-200 group-hover:text-blue-400">
                                     Remember me
                                 </span>
-                            </label>
-                            <a
+                            </label> */}
+
+                            {/* <a
                                 href="/forgot-password"
                                 className="text-sm text-blue-500 hover:text-blue-400 font-medium 
                                 transition-all duration-200 hover:scale-105 inline-block"
                             >
                                 Forgot password?
-                            </a>
+                            </a> */}
+
+
                         </div>
 
                         {/* Sign In Button */}
@@ -277,7 +280,9 @@ export default function Login() {
                     </form>
 
                     {/* Sign Up link */}
-                    <p className="text-center text-sm text-gray-400 mt-8">
+
+
+                    {/* <p className="text-center text-sm text-gray-400 mt-8">
                         New to EduManager?{" "}
                         <a 
                             href="/signup" 
@@ -286,15 +291,22 @@ export default function Login() {
                         >
                             Create Account
                         </a>
-                    </p>
+                    </p> */}
+
+
                     
                     {/* Security badge */}
-                    <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">
+
+
+                    {/* <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6-4h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6a2 2 0 012-2zm10-4a4 4 0 00-8 0v4h8v-4z" />
                         </svg>
                         <span>ISO 27001 Certified | Secure Platform</span>
-                    </div>
+                    </div> */}
+
+
+
                 </div>
             </div>
 

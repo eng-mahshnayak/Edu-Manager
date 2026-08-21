@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
+
 import {
   Box,
   Grid,
@@ -14,40 +14,40 @@ import {
   TableRow,
   Paper,
   Chip,
-  Avatar,
+  // Avatar,
   IconButton,
-  Menu,
-  MenuItem,
-  Tabs,
-  Tab,
+  // Menu,
+  // MenuItem,
+  // Tabs,
+  // Tab,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { 
   TrendingUp, 
-  TrendingDown, 
+  // TrendingDown, 
   AttachMoney,
   People, 
   School, 
-  Book, 
-  Event,
+  // Book, 
+  // Event,
   MenuBook,
-  LocalLibrary,
+  // LocalLibrary,
   DirectionsBus,
   Restaurant,
-  Computer,
-  ArrowUpward,
-  ArrowDownward,
+  // Computer,
+  // ArrowUpward,
+  // ArrowDownward,
   MoreVert,
-  Today,
+  // Today,
   CalendarToday,
-  CheckCircle,
-  Pending,
-  Warning,
-  Star,
-  Grade,
+  // CheckCircle,
+  // Pending,
+  // Warning,
+  // Star,
+  // Grade,
   AttachFile
 } from "@mui/icons-material";
-import { Bar, Line, Doughnut, Pie } from "react-chartjs-2";
+import { Bar, Line, Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -96,7 +96,7 @@ const StatsCard = styled(Card)<{ gradient: string }>(({ gradient }) => ({
   },
 }));
 
-const InfoCard = styled(Card)(({ theme }) => ({
+const InfoCard = styled(Card)(({  }) => ({
   borderRadius: "16px",
   padding: "16px",
   background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
@@ -112,11 +112,13 @@ const InfoCard = styled(Card)(({ theme }) => ({
 // ===================== MAIN DASHBOARD =====================
 
 const SchoolDashboard: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  // const [tabValue, setTabValue] = useState(0);
+  // const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  // const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
   // Dashboard Data
+
+
   const [dashboardData, setDashboardData] = useState({
     // Statistics
     statistics: {
@@ -323,19 +325,19 @@ const SchoolDashboard: React.FC = () => {
     ],
   };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, item: any) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedEvent(item);
-  };
+  // const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, item: any) => {
+  //   setAnchorEl(event.currentTarget);
+  //   setSelectedEvent(item);
+  // };
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedEvent(null);
-  };
+  // const handleMenuClose = () => {
+  //   setAnchorEl(null);
+  //   setSelectedEvent(null);
+  // };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
+  // const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  //   setTabValue(newValue);
+  // };
 
   const getStatusColor = (status: string) => {
     switch (status) {

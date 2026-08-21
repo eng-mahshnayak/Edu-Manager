@@ -1,7 +1,7 @@
 // models/user.model.js
 
 const mongoose = require('mongoose');
-
+require('dotenv').config(); // Environment variables ke liye
 
 // User Schema
 const userSchema = new mongoose.Schema({
@@ -13,16 +13,12 @@ const userSchema = new mongoose.Schema({
         minlength: [2, 'Name must be at least 2 characters long'],
         maxlength: [50, 'Name cannot exceed 50 characters']
     },
-    email: {
+    username: {
         type: String,
-        required: [true, 'Email is required'],
+        required: [true, 'username is required'],
         unique: true,
-        lowercase: true,
-        trim: true,
-        match: [
-            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-            'Please provide a valid email address'
-        ]
+        uppercase: true,
+        trim: true
     },
     
     password: {
@@ -31,16 +27,6 @@ const userSchema = new mongoose.Schema({
         minlength: [6, 'Password must be at least 6 characters long'],
         // select: false // By default password fetch nahi hoga queries mein
     },
-    phoneNumber: {
-        type: String,
-        validate: {
-            validator: function(v) {
-                return /\d{10}/.test(v); // Basic validation - 10 digits
-            },
-            message: props => `${props.value} is not a valid phone number!`
-        }
-    },
-    
     // Role based access
     role: {
         type: String,

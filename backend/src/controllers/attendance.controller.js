@@ -1,658 +1,307 @@
-const Attendance = require('../models/attendance.model');
-const Employee = require('../models/employee.model');
+const Attendance = require("../models/Attendance");
+const Staff = require("../models/staff.model");
 
-// @desc    Mark check-in
-// @route   POST /api/attendance/checkin
-// @access  Private
-const checkIn = async (req, res) => {
+// ========== GET ATTENDANCE FOR A DATE ==========
+exports.getAttendance = async (req, res) => {
   try {
-    const { employeeId, location, deviceInfo, photo, notes } = req.body;
-
-    // Get employee details
-    const employee = await Employee.findOne({ employeeId });
-    
-    if (!employee) {
-      return res.status(404).json({
-        success: false,
-        message: 'Employee not found'
-      });
-    }
-
-    // Check if already checked in today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const existingAttendance = await Attendance.findOne({
-      employee: employee._id,
-      date: {
-        $gte: today,
-        $lt: tomorrow
-      }
-    });
-
-    if (existingAttendance && existingAttendance.checkIn.time) {
+    const { date, role } = req.query;
+    if (!date) {
       return res.status(400).json({
-        success: false,
-        message: 'Already checked in today'
+        status: false,
+        statusCode: 400,
+        data: null,
+        error: "Date is required",
+        message: "Date is required",
       });
     }
 
-    // Determine attendance status based on shift timing
-    const currentTime = new Date();
-    const shiftStart = employee.shiftTiming.start; // "09:00"
-    const [hours, minutes] = shiftStart.split(':');
-    const shiftStartTime = new Date();
-    shiftStartTime.setHours(parseInt(hours), parseInt(minutes), 0);
+    // Parse date to start of day
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
 
-    let status = 'Present';
-    const lateMinutes = Math.floor((currentTime - shiftStartTime) / 60000);
+    // Fetch all active staff (with optional role filter)
+    const staffFilter = { isActive: true };
+    if (role && role !== "all") staffFilter.role = role;
+    const staffList = await Staff.find(staffFilter).select("_id name role department staffId");
 
-    if (lateMinutes > 15) {
-      status = 'Late';
-    }
+    // Fetch attendance for the date
+    const attendanceRecords = await Attendance.find({
+      date: { $gte: startDate, $lte: endDate },
+    });
 
-    // Create or update attendance
-    let attendance;
-    if (existingAttendance) {
-      attendance = await Attendance.findByIdAndUpdate(
-        existingAttendance._id,
-        {
-          checkIn: {
-            time: currentTime,
-            location,
-            ipAddress: req.ip,
-            deviceInfo,
-            photo,
-            notes
-          },
-          status,
-          lateComing: {
-            isLate: status === 'Late',
-            minutesLate: status === 'Late' ? lateMinutes : 0,
-            reason: status === 'Late' ? notes : ''
-          }
-        },
-        { new: true }
-      );
-    } else {
-      attendance = await Attendance.create({
-        employee: employee._id,
-        employeeId: employee.employeeId,
-        employeeName: `${employee.firstName} ${employee.lastName}`,
-        date: today,
-        checkIn: {
-          time: currentTime,
-          location,
-          ipAddress: req.ip,
-          deviceInfo,
-          photo,
-          notes
-        },
-        status,
-        lateComing: {
-          isLate: status === 'Late',
-          minutesLate: status === 'Late' ? lateMinutes : 0,
-          reason: status === 'Late' ? notes : ''
-        }
-      });
-    }
+    // Build response: for each staff, get attendance or default absent
+    const result = staffList.map((staff) => {
+      const record = attendanceRecords.find((r) => r.staffId === staff.staffId);
+      return {
+        staffId: staff.staffId,
+        staffName: staff.name,
+        role: staff.role,
+        department: staff.department || "",
+        status: record ? record.status : "absent",
+        checkInTime: record?.checkInTime || "",
+        checkOutTime: record?.checkOutTime || "",
+        remarks: record?.remarks || "",
+        _id: record?._id || null,
+      };
+    });
 
     res.status(200).json({
-      success: true,
-      data: attendance,
-      message: 'Check-in successful'
+      status: true,
+      statusCode: 200,
+      data: result,
+      error: null,
+      message: "Attendance fetched successfully",
     });
   } catch (error) {
     res.status(500).json({
-      success: false,
-      message: error.message
+      status: false,
+      statusCode: 500,
+      data: null,
+      error: error.message,
+      message: "Failed to fetch attendance",
     });
   }
 };
 
-// @desc    Mark check-out
-// @route   POST /api/attendance/checkout
-// @access  Private
-const checkOut = async (req, res) => {
+// ========== BULK SAVE ATTENDANCE ==========
+exports.bulkSaveAttendance = async (req, res) => {
   try {
-    const { employeeId, location, deviceInfo, photo, notes } = req.body;
-
-    // Get today's attendance record
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const attendance = await Attendance.findOne({
-      employeeId,
-      date: {
-        $gte: today,
-        $lt: tomorrow
-      }
-    });
-
-    if (!attendance) {
-      return res.status(404).json({
-        success: false,
-        message: 'No check-in record found for today'
-      });
-    }
-
-    if (attendance.checkOut && attendance.checkOut.time) {
+    const { date, records } = req.body;
+    if (!date || !records || !Array.isArray(records)) {
       return res.status(400).json({
-        success: false,
-        message: 'Already checked out today'
+        status: false,
+        statusCode: 400,
+        data: null,
+        error: "Invalid request",
+        message: "Date and records array are required",
       });
     }
 
-    const checkOutTime = new Date();
-    
-    // Calculate working hours
-    const checkInTime = new Date(attendance.checkIn.time);
-    const workingMs = checkOutTime - checkInTime;
-    const workingHours = workingMs / (1000 * 60 * 60);
-
-    // Check for early going
-    const shiftEnd = await getEmployeeShiftEnd(employeeId);
-    const [hours, minutes] = shiftEnd.split(':');
-    const shiftEndTime = new Date();
-    shiftEndTime.setHours(parseInt(hours), parseInt(minutes), 0);
-    
-    const earlyMinutes = Math.floor((shiftEndTime - checkOutTime) / 60000);
-    const isEarly = earlyMinutes > 15;
-
-    // Update attendance
-    attendance.checkOut = {
-      time: checkOutTime,
-      location,
-      ipAddress: req.ip,
-      deviceInfo,
-      photo,
-      notes
-    };
-    attendance.totalWorkingHours = workingHours;
-    attendance.earlyGoing = {
-      isEarly,
-      minutesEarly: isEarly ? earlyMinutes : 0,
-      reason: isEarly ? notes : ''
-    };
-
-    // Calculate overtime if applicable
-    if (workingHours > 8) {
-      attendance.overtime = workingHours - 8;
-    }
-
-    await attendance.save();
-
-    res.status(200).json({
-      success: true,
-      data: attendance,
-      message: 'Check-out successful'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-// Helper function to get employee shift end time
-const getEmployeeShiftEnd = async (employeeId) => {
-  const employee = await Employee.findOne({ employeeId });
-  return employee ? employee.shiftTiming.end : '18:00';
-};
-
-// @desc    Get all attendance records with search
-// @route   GET /api/attendance
-// @access  Private
-const getAllAttendance = async (req, res) => {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      search = '',
-      startDate,
-      endDate,
-      status,
-      department,
-      sortBy = 'date',
-      sortOrder = 'desc'
-    } = req.query;
-
-    // Build query
-    let query = {};
-
-    // Search by employee ID or name using regex (case insensitive)
-    if (search) {
-      query.$or = [
-        { employeeId: { $regex: search, $options: 'i' } },
-        { employeeName: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    // Date range filter
-    if (startDate || endDate) {
-      query.date = {};
-      if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        query.date.$gte = start;
-      }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        query.date.$lte = end;
-      }
-    }
-
-    // Status filter
-    if (status) {
-      query.status = status;
-    }
-
-    // Department filter (through employee reference)
-    if (department) {
-      const employees = await Employee.find({ department }).select('_id');
-      query.employee = { $in: employees.map(e => e._id) };
-    }
-
-    // Pagination
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
-
-    // Sorting
-    const sort = {};
-    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
-
-    // Execute query with population
-    const attendance = await Attendance.find(query)
-      .populate('employee', 'firstName lastName department designation')
-      .populate('approvedBy', 'firstName lastName')
-      .sort(sort)
-      .skip(skip)
-      .limit(limitNum);
-
-    // Get total count
-    const total = await Attendance.countDocuments(query);
-
-    // Get summary statistics
-    const summary = await Attendance.aggregate([
-      { $match: query },
-      {
-        $group: {
-          _id: null,
-          totalPresent: { $sum: { $cond: [{ $eq: ['$status', 'Present'] }, 1, 0] } },
-          totalAbsent: { $sum: { $cond: [{ $eq: ['$status', 'Absent'] }, 1, 0] } },
-          totalLate: { $sum: { $cond: [{ $eq: ['$status', 'Late'] }, 1, 0] } },
-          totalHalfDay: { $sum: { $cond: [{ $eq: ['$status', 'Half Day'] }, 1, 0] } },
-          totalWorkingHours: { $sum: '$totalWorkingHours' },
-          totalOvertime: { $sum: '$overtime' }
-        }
-      }
-    ]);
-
-    res.status(200).json({
-      success: true,
-      data: attendance,
-      summary: summary[0] || {
-        totalPresent: 0,
-        totalAbsent: 0,
-        totalLate: 0,
-        totalHalfDay: 0,
-        totalWorkingHours: 0,
-        totalOvertime: 0
-      },
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total,
-        pages: Math.ceil(total / limitNum)
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-// @desc    Get attendance by employee ID
-// @route   GET /api/attendance/employee/:employeeId
-// @access  Private
-const getAttendanceByEmployeeId = async (req, res) => {
-  try {
-    const { employeeId } = req.params;
-    const { startDate, endDate, limit = 30 } = req.query;
-
-    // Build date filter
-    let dateFilter = {};
-    if (startDate || endDate) {
-      dateFilter = {};
-      if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        dateFilter.$gte = start;
-      }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        dateFilter.$lte = end;
-      }
-    } else {
-      // Default to last 30 days
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      dateFilter.$gte = thirtyDaysAgo;
-    }
-
-    const attendance = await Attendance.find({
-      employeeId,
-      date: dateFilter
-    })
-      .populate('employee', 'firstName lastName department designation shiftTiming')
-      .sort({ date: -1 })
-      .limit(parseInt(limit));
-
-    // Get summary for this employee
-    const summary = await Attendance.aggregate([
-      {
-        $match: {
-          employeeId,
-          date: dateFilter
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          totalPresent: { $sum: { $cond: [{ $eq: ['$status', 'Present'] }, 1, 0] } },
-          totalAbsent: { $sum: { $cond: [{ $eq: ['$status', 'Absent'] }, 1, 0] } },
-          totalLate: { $sum: { $cond: [{ $eq: ['$status', 'Late'] }, 1, 0] } },
-          totalHalfDay: { $sum: { $cond: [{ $eq: ['$status', 'Half Day'] }, 1, 0] } },
-          totalWorkingHours: { $sum: '$totalWorkingHours' },
-          totalOvertime: { $sum: '$overtime' },
-          averageWorkingHours: { $avg: '$totalWorkingHours' }
-        }
-      }
-    ]);
-
-    res.status(200).json({
-      success: true,
-      data: attendance,
-      summary: summary[0] || {
-        totalPresent: 0,
-        totalAbsent: 0,
-        totalLate: 0,
-        totalHalfDay: 0,
-        totalWorkingHours: 0,
-        totalOvertime: 0,
-        averageWorkingHours: 0
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-// @desc    Get today's attendance status
-// @route   GET /api/attendance/today/:employeeId
-// @access  Private
-const getTodayAttendance = async (req, res) => {
-  try {
-    const { employeeId } = req.params;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const attendance = await Attendance.findOne({
-      employeeId,
-      date: {
-        $gte: today,
-        $lt: tomorrow
-      }
-    }).populate('employee', 'firstName lastName shiftTiming');
-
-    res.status(200).json({
-      success: true,
-      data: attendance || { status: 'Not Checked In' }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-// @desc    Mark bulk attendance
-// @route   POST /api/attendance/bulk
-// @access  Private
-const markBulkAttendance = async (req, res) => {
-  try {
-    const { date, attendance: attendanceList } = req.body;
-
-    if (!date || !Array.isArray(attendanceList)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide date and attendance list'
-      });
-    }
-
+    // Parse date
     const attendanceDate = new Date(date);
     attendanceDate.setHours(0, 0, 0, 0);
 
-    const results = {
-      success: [],
-      failed: []
-    };
+    const bulkOps = records.map((record) => ({
+      updateOne: {
+        filter: { staffId: record.staffId, date: attendanceDate },
+        update: {
+          $set: {
+            staffName: record.staffName,
+            status: record.status,
+            checkInTime: record.checkInTime || "",
+            checkOutTime: record.checkOutTime || "",
+            remarks: record.remarks || "",
+          },
+        },
+        upsert: true,
+      },
+    }));
 
-    for (const item of attendanceList) {
-      try {
-        const employee = await Employee.findOne({ employeeId: item.employeeId });
-        
-        if (!employee) {
-          results.failed.push({
-            employeeId: item.employeeId,
-            reason: 'Employee not found'
-          });
-          continue;
+    await Attendance.bulkWrite(bulkOps);
+
+    res.status(200).json({
+      status: true,
+      statusCode: 200,
+      data: null,
+      error: null,
+      message: "Attendance saved successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      statusCode: 500,
+      data: null,
+      error: error.message,
+      message: "Failed to save attendance",
+    });
+  }
+};
+
+// ========== GET SUMMARY FOR A DATE ==========
+exports.getSummary = async (req, res) => {
+  try {
+    const { date } = req.query;
+    if (!date) {
+      return res.status(400).json({
+        status: false,
+        statusCode: 400,
+        data: null,
+        error: "Date is required",
+        message: "Date is required",
+      });
+    }
+
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
+
+    const allStaff = await Staff.find({ isActive: true });
+    const totalStaff = allStaff.length;
+
+    const attendanceRecords = await Attendance.find({
+      date: { $gte: startDate, $lte: endDate },
+    });
+
+    const present = attendanceRecords.filter((r) => r.status === "present").length;
+    const absent = attendanceRecords.filter((r) => r.status === "absent").length;
+    const late = attendanceRecords.filter((r) => r.status === "late").length;
+    const halfDay = attendanceRecords.filter((r) => r.status === "half-day").length;
+
+    // Handle staff with no record (treated as absent)
+    const recordedStaffIds = attendanceRecords.map((r) => r.staffId);
+    const unrecordedCount = allStaff.filter((s) => !recordedStaffIds.includes(s.staffId)).length;
+    const totalAbsent = absent + unrecordedCount;
+
+    res.status(200).json({
+      status: true,
+      statusCode: 200,
+      data: {
+        total: totalStaff,
+        present,
+        absent: totalAbsent,
+        late,
+        halfDay,
+        percentage: totalStaff > 0 ? ((present + late + halfDay) / totalStaff) * 100 : 0,
+      },
+      error: null,
+      message: "Summary fetched successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      statusCode: 500,
+      data: null,
+      error: error.message,
+      message: "Failed to fetch summary",
+    });
+  }
+};
+
+
+
+// ========== MONTHLY REPORT (with salary) ==========
+exports.getMonthlyReport = async (req, res) => {
+  try {
+    const { month } = req.query; // expected format: "2024-01"
+    if (!month) {
+      return res.status(400).json({
+        status: false,
+        statusCode: 400,
+        data: null,
+        error: "Month is required (YYYY-MM)",
+        message: "Month is required",
+      });
+    }
+
+    // Parse month to start and end dates
+    const [year, monthNum] = month.split('-').map(Number);
+    const startDate = new Date(year, monthNum - 1, 1);
+    const endDate = new Date(year, monthNum, 0); // last day of month
+    const totalWorkingDays = endDate.getDate(); // assuming all days are working days (or we can exclude weekends if needed)
+
+    // Fetch all active staff
+    const staffList = await Staff.find({ isActive: true }).select(
+      "_id staffId name role department salaryType salary"
+    );
+
+    // Fetch all attendance records for the month
+    const attendanceRecords = await Attendance.find({
+      date: { $gte: startDate, $lte: endDate },
+    });
+
+    // Build summary per staff
+    const report = staffList.map((staff) => {
+      const staffRecords = attendanceRecords.filter((r) => r.staffId === staff.staffId);
+      let present = 0,
+        absent = 0,
+        late = 0,
+        halfDay = 0;
+      staffRecords.forEach((rec) => {
+        switch (rec.status) {
+          case "present":
+            present++;
+            break;
+          case "absent":
+            absent++;
+            break;
+          case "late":
+            late++;
+            break;
+          case "half-day":
+            halfDay++;
+            break;
         }
+      });
 
-        const attendance = await Attendance.findOneAndUpdate(
-          {
-            employee: employee._id,
-            date: attendanceDate
-          },
-          {
-            employee: employee._id,
-            employeeId: employee.employeeId,
-            employeeName: `${employee.firstName} ${employee.lastName}`,
-            date: attendanceDate,
-            status: item.status,
-            checkIn: item.checkIn ? { time: item.checkIn } : undefined,
-            checkOut: item.checkOut ? { time: item.checkOut } : undefined,
-            remarks: item.remarks,
-            createdBy: req.user._id
-          },
-          { upsert: true, new: true }
-        );
+      // Staff with no records are considered absent for all days
+      const recordedDays = staffRecords.length;
+      const unrecorded = totalWorkingDays - recordedDays;
+      absent += unrecorded;
 
-        results.success.push(attendance);
-      } catch (error) {
-        results.failed.push({
-          employeeId: item.employeeId,
-          reason: error.message
-        });
+      // Salary calculation
+      let basicSalary = staff.salary || 0;
+      let earnedSalary = 0;
+      let deductions = 0;
+      let dailyRate = 0;
+
+      if (staff.salaryType === "MONTHLY") {
+        dailyRate = basicSalary / totalWorkingDays;
+        deductions = dailyRate * absent;
+        earnedSalary = basicSalary - deductions;
+        // For half-day, we can deduct half day's salary (optional)
+        // deductions += dailyRate * 0.5 * halfDay;
+        // earnedSalary = basicSalary - deductions;
+      } else if (staff.salaryType === "DAILY") {
+        dailyRate = basicSalary;
+        earnedSalary = dailyRate * present;
+        deductions = 0;
+      } else if (staff.salaryType === "HOURLY") {
+        // Assume 8 hours per day
+        const hourlyRate = basicSalary;
+        const dailyHours = 8;
+        earnedSalary = hourlyRate * dailyHours * present;
+        deductions = 0;
       }
-    }
+
+      // Round to 2 decimals
+      earnedSalary = Math.round(earnedSalary * 100) / 100;
+      deductions = Math.round(deductions * 100) / 100;
+
+      return {
+        staffId: staff.staffId,
+        staffName: staff.name,
+        role: staff.role,
+        department: staff.department || "",
+        present,
+        absent,
+        late,
+        halfDay,
+        totalDays: totalWorkingDays,
+        percentage: totalWorkingDays > 0 ? ((present + late + halfDay) / totalWorkingDays) * 100 : 0,
+        salaryType: staff.salaryType,
+        basicSalary,
+        earnedSalary,
+        deductions,
+      };
+    });
 
     res.status(200).json({
-      success: true,
-      data: results,
-      message: `Processed ${attendanceList.length} records`
+      status: true,
+      statusCode: 200,
+      data: report,
+      error: null,
+      message: "Monthly report generated successfully",
     });
   } catch (error) {
     res.status(500).json({
-      success: false,
-      message: error.message
+      status: false,
+      statusCode: 500,
+      data: null,
+      error: error.message,
+      message: "Failed to generate monthly report",
     });
   }
-};
-
-// @desc    Update attendance record
-// @route   PUT /api/attendance/:id
-// @access  Private
-const updateAttendance = async (req, res) => {
-  try {
-    const attendance = await Attendance.findByIdAndUpdate(
-      req.params.id,
-      {
-        ...req.body,
-        updatedBy: req.user._id
-      },
-      { new: true, runValidators: true }
-    );
-
-    if (!attendance) {
-      return res.status(404).json({
-        success: false,
-        message: 'Attendance record not found'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: attendance,
-      message: 'Attendance updated successfully'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-// @desc    Approve/Reject attendance
-// @route   PATCH /api/attendance/:id/approve
-// @access  Private
-const approveAttendance = async (req, res) => {
-  try {
-    const { approvalStatus, rejectionReason } = req.body;
-
-    const attendance = await Attendance.findByIdAndUpdate(
-      req.params.id,
-      {
-        approvalStatus,
-        rejectionReason: approvalStatus === 'Rejected' ? rejectionReason : undefined,
-        approvedBy: req.user._id,
-        approvedAt: new Date()
-      },
-      { new: true }
-    );
-
-    if (!attendance) {
-      return res.status(404).json({
-        success: false,
-        message: 'Attendance record not found'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: attendance,
-      message: `Attendance ${approvalStatus.toLowerCase()} successfully`
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-// @desc    Get attendance report
-// @route   GET /api/attendance/report
-// @access  Private
-const getAttendanceReport = async (req, res) => {
-  try {
-    const { startDate, endDate, groupBy = 'day' } = req.query;
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-
-    let groupFormat;
-    switch (groupBy) {
-      case 'month':
-        groupFormat = { $dateToString: { format: '%Y-%m', date: '$date' } };
-        break;
-      case 'week':
-        groupFormat = { $dateToString: { format: '%Y-W%V', date: '$date' } };
-        break;
-      default:
-        groupFormat = { $dateToString: { format: '%Y-%m-%d', date: '$date' } };
-    }
-
-    const report = await Attendance.aggregate([
-      {
-        $match: {
-          date: { $gte: start, $lte: end }
-        }
-      },
-      {
-        $lookup: {
-          from: 'employees',
-          localField: 'employee',
-          foreignField: '_id',
-          as: 'employeeDetails'
-        }
-      },
-      {
-        $group: {
-          _id: groupFormat,
-          totalRecords: { $sum: 1 },
-          present: { $sum: { $cond: [{ $eq: ['$status', 'Present'] }, 1, 0] } },
-          absent: { $sum: { $cond: [{ $eq: ['$status', 'Absent'] }, 1, 0] } },
-          late: { $sum: { $cond: [{ $eq: ['$status', 'Late'] }, 1, 0] } },
-          halfDay: { $sum: { $cond: [{ $eq: ['$status', 'Half Day'] }, 1, 0] } },
-          totalWorkingHours: { $sum: '$totalWorkingHours' },
-          totalOvertime: { $sum: '$overtime' },
-          averageWorkingHours: { $avg: '$totalWorkingHours' }
-        }
-      },
-      { $sort: { _id: 1 } }
-    ]);
-
-    res.status(200).json({
-      success: true,
-      data: report
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-module.exports = {
-  checkIn,
-  checkOut,
-  getAllAttendance,
-  getAttendanceByEmployeeId,
-  getTodayAttendance,
-  markBulkAttendance,
-  updateAttendance,
-  approveAttendance,
-  getAttendanceReport
 };
