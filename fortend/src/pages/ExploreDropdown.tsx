@@ -933,7 +933,9 @@ const BasicKnowledgePage: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [intervalTime, setIntervalTime] = useState(5); // seconds
   const [isPlaying, setIsPlaying] = useState(true);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  // const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const apiUrl = import.meta.env.VITE_API_URL || '';
 
@@ -946,6 +948,9 @@ const BasicKnowledgePage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
+
+      console.log(category);
+      
       const url = `${apiUrl}/aicontent/get${subValue}`;
       const response = await axios.get(url);
       const data = response.data;
@@ -1030,25 +1035,6 @@ const BasicKnowledgePage: React.FC = () => {
     }
   }, [intervalTime]);
 
-  // Helper to get item display image or emoji
-  const getItemDisplay = (item: any) => {
-    if (item.imageURL) {
-      return (
-        <img
-          src={item.imageURL}
-          alt={item.name}
-          className="w-full h-full object-cover rounded-full"
-          onError={(e) => {
-            // If image fails, fallback to emoji
-            (e.target as HTMLImageElement).style.display = 'none';
-            // We'll show emoji via parent fallback, but we can just let it show broken? Better to show fallback.
-            // We'll handle fallback in the card by checking if image exists.
-          }}
-        />
-      );
-    }
-    return null;
-  };
 
   // ---------- Render ----------
   return (

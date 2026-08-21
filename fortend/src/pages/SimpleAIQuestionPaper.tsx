@@ -2059,11 +2059,11 @@ const AIStoryGenerator: React.FC = () => {
                 freeSolo
                 options={categoryOptions}
                 value={category}
-                onChange={(event, newValue) => {
+                onChange={(_event, newValue) => {
                   // When user selects from dropdown
                   setCategory(newValue || 'General');
                 }}
-                onInputChange={(event, newInputValue) => {
+                onInputChange={(_event, newInputValue) => {
                   // When user types
                   if (newInputValue !== undefined) {
                     setCategory(newInputValue);
@@ -2094,10 +2094,10 @@ const AIStoryGenerator: React.FC = () => {
                 freeSolo
                 options={themeOptions}
                 value={theme}
-                onChange={(event, newValue) => {
+                onChange={(_event, newValue) => {
                   setTheme(newValue || '');
                 }}
-                onInputChange={(event, newInputValue) => {
+                onInputChange={(_event, newInputValue) => {
                   if (newInputValue !== undefined) {
                     setTheme(newInputValue);
                   }

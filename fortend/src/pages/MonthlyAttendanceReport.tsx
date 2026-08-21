@@ -3,7 +3,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
+  PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 
 interface StaffReport {
@@ -374,7 +374,9 @@ const MonthlyAttendanceReport: React.FC = () => {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                       label={({ name, percent }) =>
+  `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
+}
                         outerRadius={150}
                         fill="#8884d8"
                         dataKey="value"

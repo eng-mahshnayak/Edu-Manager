@@ -885,7 +885,7 @@ const TransferCertificate: React.FC = () => {
                   <TableCell sx={{ color: 'white' }}>{tc.admissionNo}</TableCell>
                   <TableCell sx={{ color: 'white' }}>{new Date(tc.dateOfLeaving).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <Chip
+                    {/* <Chip
                       icon={getStatusIcon(tc.status)}
                       label={tc.status.toUpperCase()}
                       size="small"
@@ -893,7 +893,17 @@ const TransferCertificate: React.FC = () => {
                         bgcolor: `${getStatusColor(tc.status)}20`,
                         color: getStatusColor(tc.status),
                       }}
-                    />
+                    /> */}
+
+                    <Chip
+  icon={getStatusIcon(tc.status) ?? <span />}
+  label={tc.status.toUpperCase()}
+  size="small"
+  sx={{
+    bgcolor: `${getStatusColor(tc.status)}20`,
+    color: getStatusColor(tc.status),
+  }}
+/>
                   </TableCell>
                   <TableCell>
                     <Box display="flex" gap={1} justifyContent="center">

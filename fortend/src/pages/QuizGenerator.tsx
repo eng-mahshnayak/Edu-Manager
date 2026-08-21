@@ -1,8 +1,8 @@
 // QuizGenerator.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 
-const API_BASE = 'http://localhost:5000/api';
+
 
 type QuizMethod = 'topic' | 'image' | 'pdf' | 'class';
 type QuestionType = 'mcq' | 'truefalse' | 'fillblank';
@@ -146,6 +146,9 @@ const QuizGenerator: React.FC = () => {
   const generateQuizFromImage = async (file: File) => {
     setLoading(true);
     try {
+
+      console.log(file);
+      
       // Simulate OCR & AI
       await new Promise(resolve => setTimeout(resolve, 2000));
       const quizData = generateMockQuiz('Image Quiz', numQuestions);
@@ -161,6 +164,9 @@ const QuizGenerator: React.FC = () => {
   const generateQuizFromPDF = async (file: File) => {
     setLoading(true);
     try {
+
+      console.log(file);
+      
       await new Promise(resolve => setTimeout(resolve, 2000));
       const quizData = generateMockQuiz('PDF Quiz', numQuestions);
       setQuiz(quizData);

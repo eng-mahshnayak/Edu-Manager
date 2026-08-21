@@ -2,17 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-// ==================== Types ====================
-interface Staff {
-  _id: string;
-  staffId: string;
-  name: string;
-  phone: string;
-  email: string;
-  role: 'TEACHER' | 'DRIVER' | 'MAID' | 'LABOUR';
-  department?: string;
-  isActive: boolean;
-}
+
 
 interface AttendanceRecord {
   staffId: string;

@@ -994,22 +994,21 @@ import React, {
 import {
   Brush,
   Check,
-  ChevronDown,
-  Circle,
+  
   Download,
   Eraser,
-  Heart,
-  Image as ImageIcon,
+  
+  // Image as ImageIcon,
   PaintBucket,
   Palette,
   Redo2,
-  RotateCcw,
+  
   Save,
   Sparkles,
-  Star,
+
   Trash2,
   Undo2,
-  X,
+
 } from "lucide-react";
 
 /* =========================================================
@@ -1024,10 +1023,7 @@ type ColoringPage = {
   emoji: string;
 };
 
-type Region = {
-  id: string;
-  label: string;
-};
+
 
 type Sticker = {
   id: number;

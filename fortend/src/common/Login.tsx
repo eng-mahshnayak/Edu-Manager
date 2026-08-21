@@ -16,7 +16,7 @@ export default function Login() {
     console.log(error);
     
     const [showPassword, setShowPassword] = useState(false);
-    const [rememberMe, setRememberMe] = useState(true);
+
 
     const handleLogin = async (e: any) => {
         e.preventDefault();   // important (page reload stop karega)

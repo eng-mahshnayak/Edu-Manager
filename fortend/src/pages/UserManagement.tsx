@@ -82,22 +82,55 @@ const roleOptions = [
 
     setLoading(true);
     try {
+      // let res;
+      // if (editingUser) {
+      //   // const updateData = { ...userData };
+
+      //     const { password, ...updateData } = userData;
+
+      //   if (!updateData.password) delete updateData.password;
+      //   res = await axios.put(`${API_BASE}/users/${editingUser._id}`, updateData);
+      // } else {
+      //   res = await axios.post(`${API_BASE}/users`, userData);
+      // }
+      // if (res.data.status) {
+      //   toast.success(res.data.message);
+      //   setShowModal(false);
+      //   setEditingUser(null);
+      //   fetchUsers();
+      // } else {
+      //   toast.error(res.data.message || 'Operation failed');
+      // }
+
       let res;
-      if (editingUser) {
-        const updateData = { ...userData };
-        if (!updateData.password) delete updateData.password;
-        res = await axios.put(`${API_BASE}/users/${editingUser._id}`, updateData);
-      } else {
-        res = await axios.post(`${API_BASE}/users`, userData);
-      }
-      if (res.data.status) {
-        toast.success(res.data.message);
-        setShowModal(false);
-        setEditingUser(null);
-        fetchUsers();
-      } else {
-        toast.error(res.data.message || 'Operation failed');
-      }
+
+  if (editingUser) {
+    const { password, ...rest } = userData;
+
+    // Password empty hai to password update mat bhejo
+    const updateData = password
+      ? { ...rest, password }
+      : rest;
+
+    res = await axios.put(
+      `${API_BASE}/users/${editingUser._id}`,
+      updateData
+    );
+  } else {
+    // New user create
+    res = await axios.post(`${API_BASE}/users`, userData);
+  }
+
+  if (res.data.status) {
+    toast.success(res.data.message);
+
+    setShowModal(false);
+    setEditingUser(null);
+
+    fetchUsers();
+  } else {
+    toast.error(res.data.message || 'Operation failed');
+  }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Server error');
     } finally {

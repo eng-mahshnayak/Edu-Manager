@@ -108,6 +108,8 @@ const monthNames = [
 
 const shortMonthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+console.log(shortMonthNames);
+
 // ----- Main Component -----
 const FullYearLeaveCalendar: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -129,82 +131,9 @@ const FullYearLeaveCalendar: React.FC = () => {
     other: 'O',
   };
 
-  // Helper: get leave for a specific date
-  const getLeaveForDate = (year: number, month: number, day: number): LeaveRecord | undefined => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return leaves.find(l => l.date === dateStr);
-  };
 
-  // Render a single month
-  const renderMonth = (monthIndex: number) => {
-    const daysInMonth = new Date(currentYear, monthIndex + 1, 0).getDate();
-    const firstDay = new Date(currentYear, monthIndex, 1).getDay();
 
-    const today = new Date();
-    const isCurrentMonth = today.getMonth() === monthIndex && today.getFullYear() === currentYear;
-    const todayDate = today.getDate();
 
-    return (
-      <div
-        key={monthIndex}
-        className={`bg-gray-800/30 backdrop-blur-sm rounded-xl p-3 border ${
-          isCurrentMonth ? 'border-blue-500/40 ring-2 ring-blue-500/20' : 'border-gray-700/30'
-        } transition-all duration-200 hover:border-gray-500/50`}
-      >
-        {/* Month Header */}
-        <div className="text-center font-semibold text-white text-sm py-1 mb-2 bg-gray-700/30 rounded-lg">
-          {shortMonthNames[monthIndex]}
-          {isCurrentMonth && <span className="ml-1 text-blue-400 text-xs">⬤</span>}
-        </div>
-
-        {/* Day Headers */}
-        <div className="grid grid-cols-7 gap-0.5 mb-1">
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-            <div key={i} className="text-center text-[8px] font-medium text-gray-500">
-              {d}
-            </div>
-          ))}
-        </div>
-
-        {/* Days Grid */}
-        <div className="grid grid-cols-7 gap-0.5">
-          {/* Empty cells for days before 1st */}
-          {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={`empty-${i}`} className="aspect-square" />
-          ))}
-
-          {/* Actual days */}
-          {Array.from({ length: daysInMonth }).map((_, i) => {
-            const day = i + 1;
-            const leave = getLeaveForDate(currentYear, monthIndex, day);
-            const isToday = isCurrentMonth && day === todayDate;
-
-            return (
-              <div
-                key={day}
-                className={`
-                  aspect-square flex flex-col items-center justify-center rounded-lg text-[10px] font-medium
-                  transition-all duration-100
-                  ${isToday ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/40' : 'text-gray-300 hover:bg-gray-700/30'}
-                  ${leave ? 'bg-opacity-20' : ''}
-                `}
-              >
-                <span className={isToday ? 'font-bold' : ''}>{day}</span>
-                {leave && (
-                  <span className={`
-                    text-[7px] px-0.5 rounded-full font-bold
-                    ${typeColors[leave.type].split(' ')[0]} ${typeColors[leave.type].split(' ')[1]}
-                  `}>
-                    {typeLabels[leave.type]}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
 
   // ----- Statistics - Full Year -----
   const totalLeaves = leaves.length;

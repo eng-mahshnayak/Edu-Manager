@@ -459,7 +459,7 @@ const QuestionPaperGenerator: React.FC = () => {
             </Paper>
 
             {/* Tabs */}
-            <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)} sx={{ mb: 2, bgcolor: 'white', borderRadius: 2 }}>
+            <Tabs value={activeTab} onChange={(_e, v) => setActiveTab(v)} sx={{ mb: 2, bgcolor: 'white', borderRadius: 2 }}>
               <Tab label="Question Paper" icon={<Quiz />} />
               <Tab label="Answer Key" icon={<CheckCircle />} />
             </Tabs>

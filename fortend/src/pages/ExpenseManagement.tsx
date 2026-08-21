@@ -326,10 +326,6 @@ const ExpenseManagement: React.FC = () => {
     return category ? category.icon : '📋';
   };
 
-  const getCategoryColor = (categoryName: string) => {
-    const category = expenseCategories.find((c) => c.name === categoryName);
-    return category ? category.color : '#6B7280';
-  };
 
   // ----- Render -----
   return (
@@ -986,7 +982,8 @@ const ExpenseManagement: React.FC = () => {
               </div>
 
               <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={getReportData()}>
+                {/* <BarChart data={getReportData()}> */}
+               <BarChart data={getReportData() as any}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis
                     dataKey={reportType === 'daily' ? 'day' : reportType === 'monthly' ? 'month' : 'name'}

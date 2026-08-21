@@ -5,7 +5,7 @@ import {
   Box, Card, Typography, Grid, IconButton, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper, Chip, Avatar, Dialog,
   DialogTitle, DialogContent, TextField, Select, MenuItem, FormControl,
-  InputLabel, Tooltip, Divider, Button, Autocomplete,
+  InputLabel, Tooltip, Button, Autocomplete,
 } from '@mui/material';
 import {
   Print, Visibility, Edit, Delete, Close, Search, EventNote, Assignment, Add,
@@ -51,13 +51,18 @@ const ExamAdmitCard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClass, setFilterClass] = useState<string>('all');
   const [filterExam, setFilterExam] = useState<string>('all');
-  const [printLoading, setPrintLoading] = useState(false);
+ 
 
   // ----- Student search for form -----
   const [studentOptions, setStudentOptions] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
+
+  console.log(selectedStudent);
+  
   const [examName, setExamName] = useState<string>('');
-  const [examYear, setExamYear] = useState<string>(new Date().getFullYear() + '-' + (new Date().getFullYear() + 1).toString().slice(2));
+
+setExamName("")
+
 
   // ----- Constants -----
   const classes = ['8th', '9th', '10th', '11th', '12th'];
@@ -504,8 +509,8 @@ const ExamAdmitCard: React.FC = () => {
                     <Autocomplete
                       options={studentOptions}
                       getOptionLabel={(option) => `${option.name} (${option.class}-${option.section}, Roll: ${option.rollNumber})`}
-                      onInputChange={(e, val) => searchStudents(val)}
-                      onChange={(e, val) => {
+                      onInputChange={(_e, val) => searchStudents(val)}
+                      onChange={(_e, val) => {
                         if (val) {
                           setFormStudentId(val._id);
                           setFormStudentName(val.name);

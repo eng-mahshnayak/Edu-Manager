@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { } from 'react';
 
 import {
   Box,
@@ -119,7 +119,7 @@ const SchoolDashboard: React.FC = () => {
   // Dashboard Data
 
 
-  const [dashboardData, setDashboardData] = useState({
+  const dashboardData={
     // Statistics
     statistics: {
       totalStudents: 1250,
@@ -228,7 +228,7 @@ const SchoolDashboard: React.FC = () => {
       totalItems: 45,
       staff: 8,
     },
-  });
+  }
 
   // Chart data configurations
   const revenueChartData = {

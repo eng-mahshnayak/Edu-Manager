@@ -1828,12 +1828,7 @@ const GameLibrary: React.FC = () => {
     ? gamesData
     : gamesData.filter(game => game.category === selectedCategory);
 
-  // Category labels for buttons
-  const categoryLabels = {
-    'mind-memory': '🧠 Mind & Memory',
-    'physical-coordination': '🏃 Physical & Coordination',
-    'teamwork-strategy': '🤝 Teamwork & Strategy',
-  };
+
 
   // Count games per category (for display)
   const counts = {

@@ -7,20 +7,17 @@ import {
   Typography,
   Button,
   CircularProgress,
-  Paper,
-  Grid,
   TextField,
-  Chip,
   IconButton,
   Tooltip,
   Alert,
   Divider,
-  Stack,
+
 } from "@mui/material";
 import {
   AutoAwesome,
   AttachFile,
-  Image,
+
   VideoLibrary,
   Clear,
   Download,
@@ -55,6 +52,10 @@ const ProblemSolver: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [solution, setSolution] = useState<SolutionSection | null>(null);
   const [rawSolution, setRawSolution] = useState("");
+
+
+  console.log(rawSolution);
+  
   const [filePreviews, setFilePreviews] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
